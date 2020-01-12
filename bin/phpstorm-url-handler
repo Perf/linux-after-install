@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+# PhpStorm URL Handler
+# https://github.com/sanduhrs/phpstorm-url-handler
+# phpstorm://open?url=file://@file&line=@line
+# phpstorm://open?file=@file&line=@line
+#
+# @license GPL
+# @author Stefan Auditor <stefan.auditor@erdfisch.de>
+
+arg=${1}
+pattern=".*file(:\/\/|\=)(.*)&line=(.*)"
+
+# Get the file path.
+file=$(echo "${arg}" | sed -r "s/${pattern}/\2/")
+
+# Get the line number.
+line=$(echo "${arg}" | sed -r "s/${pattern}/\3/")
+
+# Check if phpstorm|pstorm command exist.
+if type phpstorm > /dev/null; then
+    /usr/bin/env phpstorm --line "${line}" "${file}" && wmctrl -a PhpStorm
+elif type pstorm > /dev/null; then
+    /usr/bin/env pstorm --line "${line}" "${file}" && wmctrl -a PhpStorm
+fi

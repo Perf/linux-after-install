@@ -1,0 +1,13 @@
+[Desktop Entry]
+DefaultProfile=Profile 1.profile
+
+[Favorite Profiles]
+Favorites=Profile 1.profile
+
+[MainWindow]
+ToolBarsMovable=Disabled
+
+[TabBar]
+CloseTabOnMiddleMouseButton=true
+NewTabButton=true
+TabBarVisibility=AlwaysShowTabBar

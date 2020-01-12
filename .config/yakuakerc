@@ -1,0 +1,11 @@
+[Desktop Entry]
+DefaultProfile=Profile 1.profile
+
+[Dialogs]
+FirstRun=false
+
+[Favorite Profiles]
+Favorites=Profile 1.profile
+
+[Window]
+Height=90
