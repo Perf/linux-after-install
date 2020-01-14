@@ -12,8 +12,14 @@ fi
 sudo apt -y update
 sudo apt -y upgrade
 
+# add Oibaf video drivers PPA
+# https://launchpad.net/~oibaf/+archive/ubuntu/graphics-drivers
+sudo add-apt-repository -y ppa:oibaf/graphics-drivers
+
 # add KDE repo and update
 sudo add-apt-repository -y ppa:kubuntu-ppa/backports
+
+# perform full update/upgrade
 sudo apt -y update
 sudo apt -y full-upgrade
 
@@ -21,7 +27,6 @@ sudo apt -y full-upgrade
 sudo apt -y install \
     software-properties-common \
     build-essential \
-    curl \
     steam \
     vlc \
     streamripper \
@@ -31,7 +36,8 @@ sudo apt -y install \
     jq \
     telegram-desktop \
     wget \
-    curl
+    curl \
+    inxi
     
 # Google Chrome
 wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
