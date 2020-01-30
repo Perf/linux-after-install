@@ -66,20 +66,6 @@ sudo apt -y autoremove
 balooctl disable
 balooctl purge
 
-# install cloudflared for DNS over HTTPS
-wget https://bin.equinox.io/c/VdrWdbjqyF/cloudflared-stable-linux-amd64.deb
-sudo dpkg -i cloudflared-stable-linux-amd64.deb || sudo apt -yf install
-rm cloudflared-stable-linux-amd64.deb
-sudo mkdir -p /usr/local/etc/cloudflared
-sudo cat << EOF > /usr/local/etc/cloudflared/config.yml
-proxy-dns: true
-proxy-dns-upstream:
- - https://1.1.1.1/dns-query
- - https://1.0.0.1/dns-query
-EOF
-sudo cloudflared service install
-
-
 # dns proxy
 # https://github.com/DNSCrypt/dnscrypt-proxy/wiki/Installation-linux
 # CHECK apt install dnscrypt-proxy
