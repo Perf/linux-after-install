@@ -26,6 +26,10 @@ export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || pr
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 nvm install --lts
 
+# Install Insomnia API testing tool
+sudo snap install insomnia
+
+
 # install symfony cli
 # curl -sS https://get.symfony.com/cli/installer | bash
 # sudo mv /home/ygarris/.symfony/bin/symfony /usr/local/bin/symfony
