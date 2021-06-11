@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -eux
+set -eu
 
 # install custom fonts and update font cache
 mkdir -p ~/.local/share/fonts
@@ -20,4 +20,3 @@ kwriteconfig5 --file ~/.config/kdeglobals --group General --key fixed "mononoki 
 cp -r .config/* ~/.config
 cp -r .local/* ~/.local
 cp .vimrc ~/
-

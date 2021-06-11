@@ -2,91 +2,99 @@
 
 set -eu
 
+# Get rid of snapd
+while true
+do
+    printf "Uninstalling snapd.\n"
+    printf "<Enter> for 'yes' | any other key for 'no'\n"
+    read -p "remove snapd [<Enter>|any key]: " answer
+    case ${answer} in
+        '' )  printf "Removing snapd\n"
+              apt -y purge snapd
+              apt-mark hold snapd
+              break;;
+
+        * )   printf "Keeping snapd\n"
+              break;;
+    esac
+done
+
 # set hostname
-NEW_HOSTNAME="linux-desktop-home"
 OLD_HOSTNAME="$(hostname)"
 while true
 do
-    printf "Setting hostname."
-    printf "Enter new hostname | hit <Enter> to use default '${NEW_HOSTNAME}' | enter 'c' to keep current '${OLD_HOSTNAME}'"
-    read -p "hostname [string|<Enter>|c]: " answer
-    case $answer in
-        'c' )   printf "Keeping current hostname '${OLD_HOSTNAME}'."
-                NEW_HOSTNAME="${OLD_HOSTNAME}"
+    printf "Setting hostname.\n"
+    printf "<Enter> to keep current '%s' | type in new hostname\n" ${OLD_HOSTNAME}
+    read -p "hostname [<Enter>|string]: " answer
+    case ${answer} in
+        '' )    printf "Keeping current hostname '%s'\n" ${OLD_HOSTNAME}
                 break;;
 
-        '' )    printf "Using default hostname '${NEW_HOSTNAME}'."
-                break;;
-
-        * )     printf "Using provided hostname '${answer}'."
-                NEW_HOSTNAME="${answer}"
+        * )     printf "Setting new hostname '%s'\n" ${answer}
+                sudo hostnamectl set-hostname ${answer}
+                sudo sed -i "s/127\.0\.1\.1\s.*/127\.0\.1\.1\t${answer}/" /etc/hosts
                 break;;
     esac
 done
-if [[ "${NEW_HOSTNAME}" != "${OLD_HOSTNAME}" ]]; then
-    printf "\nSetting new hostname: ${NEW_HOSTNAME}\n"
-    sudo hostnamectl set-hostname ${NEW_HOSTNAME}
-    sudo sed -i "s/127\.0\.1\.1\s.*/127\.0\.1\.1\t${NEW_HOSTNAME}/" /etc/hosts
-fi
 
 # set swappiness
-NEW_SWAPPINESS=10
-OLD_SWAPPINESS=$(cat /proc/sys/vm/swappiness)
+NEW_SWAPPINESS="10"
+OLD_SWAPPINESS="$(cat /proc/sys/vm/swappiness)"
 while true
 do
-    printf "Decreasing swappiness."
-    printf "Enter new swappiness number | hit <Enter> to use recommended '${NEW_SWAPPINESS}' | enter 'c' to keep current '${OLD_SWAPPINESS}'"
+    printf "Decreasing swappiness.\n"
+    printf "Enter new swappiness number | <Enter> to use recommended '%d' | 'c' to keep current '%d'\n" ${NEW_SWAPPINESS} ${OLD_SWAPPINESS}
     read -p "vm.swappiness [integer|<Enter>|c]: " answer
-    case $answer in
-        'c' )   printf "Keeping current swappiness '${OLD_SWAPPINESS}'."
+    case ${answer} in
+        'c' )   printf "Keeping current swappiness '%d'\n" ${OLD_SWAPPINESS}
                 NEW_SWAPPINESS="${OLD_SWAPPINESS}"
                 break;;
 
-        '' )    printf "Using recommended swappiness '${NEW_SWAPPINESS}'."
+        '' )    printf "Using recommended swappiness '%d'\n" ${NEW_SWAPPINESS}
                 break;;
 
-        * )     printf "Using provided swappiness '${answer}'."
+        * )     printf "Using provided swappiness '%d'\n" ${answer}
                 NEW_SWAPPINESS="${answer}"
                 break;;
     esac
 done
 if [[ "${NEW_SWAPPINESS}" != "${OLD_SWAPPINESS}" ]]; then
-    echo "\nSetting new swappiness: ${NEW_SWAPPINESS}\n"
-    printf "vm.swappiness = ${NEW_SWAPPINESS}" | sudo tee /etc/sysctl.d/swapiness.conf
+    printf "\nSetting new swappiness: '%d'\n" ${NEW_SWAPPINESS}
+    printf "vm.swappiness = %d" ${NEW_SWAPPINESS} | sudo tee /etc/sysctl.d/swapiness.conf
     sudo sysctl -p --system
 fi
 
 # add Oibaf video drivers PPA
 while true
 do
-    printf "Adding Oibaf graphics drivers repository."
-    printf "Read https://launchpad.net/~oibaf/+archive/ubuntu/graphics-drivers for details."
-    printf "'y' to add | <Enter> to add | 'n' to skip adding"
-    read -p "[y|<Enter>|n]: " answer
-    case $answer in
-        'n' )   printf "Skipping."
-                break;;
+    printf "Adding Oibaf graphics drivers repository.\n"
+    printf "Read https://launchpad.net/~oibaf/+archive/ubuntu/graphics-drivers for details.\n"
+    printf "<Enter> for 'yes' | any other key for 'no'\n"
+    read -p "add Oibaf repo [<Enter>|any key]: " answer
+    case ${answer} in
+        '' )  printf "Adding Oibaf repository\n"
+              sudo add-apt-repository -y ppa:oibaf/graphics-drivers
+              break;;
 
-        'y'|'' )    printf "Adding Oibaf repository."
-                    sudo add-apt-repository -y ppa:oibaf/graphics-drivers
-                    break;;
+        * )   printf "Skipping\n"
+              break;;
     esac
 done
 
 # add Kubuntu backports PPA
 while true
 do
-    printf "Adding Kubuntu Backport repository (KDE Plasma, etc...)."
-    printf "Read https://launchpad.net/~kubuntu-ppa/+archive/ubuntu/backports for details."
-    printf "'y' to add | <Enter> to add | 'n' to skip adding"
-    read -p "[y|<Enter>|n]: " answer
-    case $answer in
-        'n' )   printf "Skipping."
-                break;;
+    printf "Adding Kubuntu Backport repository (KDE Plasma, etc...).\n"
+    printf "Read https://launchpad.net/~kubuntu-ppa/+archive/ubuntu/backports for details.\n"
+    printf "<Enter> for 'yes' | any other key for 'no'\n"
+    read -p "add Kubuntu backports repo [<Enter>|any key]: " answer
+    case ${answer} in
+        '' )  printf "Adding Kubuntu backports repository\n"
+              sudo add-apt-repository -y ppa:kubuntu-ppa/backports
+              break;;
 
-        'y'|'' )    printf "Adding Kubuntu backports repository."
-                    sudo add-apt-repository -y ppa:kubuntu-ppa/backports
-                    break;;
+        * )   printf "Skipping\n"
+              break;;
     esac
 done
 
@@ -98,29 +106,87 @@ sudo apt -y full-upgrade
 sudo apt -y install \
     software-properties-common \
     build-essential \
-    chromium-browser \
-    firefox \
     htop \
     jq \
-    telegram-desktop \
     wget \
     curl \
-    inxi
+    inxi \
+    mc
 
 # Google Chrome
-wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt -yf install
-rm google-chrome*.deb
+while true
+do
+    printf "Installing Google Chrome.\n"
+    printf "<Enter> for 'yes' | any other key for 'no'\n"
+    read -p "install Google Chrome [<Enter>|any key]: " answer
+    case ${answer} in
+        '' )  printf "Installing Google Chrome\n"
+              wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+              sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt -yf install
+              rm google-chrome-stable_current_amd64.deb
+              break;;
+
+        * )   printf "Skipping Google Chrome installation\n"
+              break;;
+    esac
+done
+
+## Microsoft Edge
+while true
+do
+    printf "Installing latest Microsoft Edge (Beta).\n"
+    printf "<Enter> for 'yes' | any other key for 'no'\n"
+    read -p "[<Enter>|any key]: " answer
+    case ${answer} in
+        '' )  printf "Installing Microsoft Edge\n"
+              curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+              sudo install -o root -g root -m 644 microsoft.gpg /etc/apt/trusted.gpg.d/
+              sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/edge stable main" > /etc/apt/sources.list.d/microsoft-edge-beta.list'
+              sudo rm microsoft.gpg
+              sudo apt -y update && sudo apt -y install microsoft-edge-beta
+              break;;
+
+        * )   printf "Skipping Microsoft Edge installation\n"
+              break;;
+    esac
+done
 
 # Skype
-wget https://go.skype.com/skypeforlinux-64.deb
-sudo dpkg -i skypeforlinux-64.deb || sudo apt -yf install
-rm skypeforlinux-64.deb
+while true
+do
+    printf "Installing Skype.\n"
+    printf "<Enter> for 'yes' | any other key for 'no'\n"
+    read -p "[<Enter>|any key]: " answer
+    case ${answer} in
+        '' )  printf "Installing Skype\n"
+              wget https://go.skype.com/skypeforlinux-64.deb
+              sudo dpkg -i skypeforlinux-64.deb || sudo apt -yf install
+              rm skypeforlinux-64.deb
+              break;;
+
+        * )   printf "Skipping Skype installation\n"
+              break;;
+    esac
+done
 
 # Signal
-curl -s https://updates.signal.org/desktop/apt/keys.asc | sudo apt-key add -
-printf "deb [arch=amd64] https://updates.signal.org/desktop/apt xenial main" | sudo tee -a /etc/apt/sources.list.d/signal-xenial.list
-sudo apt -y update && sudo apt -y install signal-desktop
+while true
+do
+    printf "Installing Signal.\n"
+    printf "<Enter> for 'yes' | any other key for 'no'\n"
+    read -p "[<Enter>|any key]: " answer
+    case ${answer} in
+        '' )  printf "Installing Signal\n"
+              wget -O- https://updates.signal.org/desktop/apt/keys.asc | gpg --dearmor > signal-desktop-keyring.gpg
+              cat signal-desktop-keyring.gpg | sudo tee -a /usr/share/keyrings/signal-desktop-keyring.gpg > /dev/null
+              printf 'deb [arch=amd64 signed-by=/usr/share/keyrings/signal-desktop-keyring.gpg] https://updates.signal.org/desktop/apt xenial main' | sudo tee -a /etc/apt/sources.list.d/signal-xenial.list
+              sudo apt -y update && sudo apt -y install signal-desktop
+              break;;
+
+        * )   printf "Skipping Signal installation\n"
+              break;;
+    esac
+done
 
 # apt cleanup
 sudo apt -y autoclean
@@ -131,42 +197,3 @@ balooctl disable
 balooctl purge
 
 # dns proxy
-INSTALL_DNSCRYPT=0
-while true
-do
-    printf "Installing dnscrypt-proxy."
-    printf "Read https://github.com/DNSCrypt/dnscrypt-proxy/wiki/Installation-linux for details."
-    printf "'y' to add | <Enter> to add | 'n' to skip adding"
-    read -p "[y|<Enter>|n]: " answer
-    case $answer in
-        'n' )   printf "Skipping."
-                break;;
-
-        'y'|'' )    printf "Installing dnscrypt-proxy."
-                    INSTALL_DNSCRYPT=1
-                    break;;
-    esac
-done
-if [[ "${INSTALL_DNSCRYPT}" != "0" ]]; then
-    INSTALL_DNSCRYPT_DIR="~/bin/dnscrypt-proxy"
-    mkdir -p ${INSTALL_DNSCRYPT_DIR}
-    DNSCRYPT_VERSION=$(curl --silent 'https://api.github.com/repos/DNSCrypt/dnscrypt-proxy/releases/latest' | jq '.name' -r)
-    curl -L "https://github.com/DNSCrypt/dnscrypt-proxy/releases/download/${DNSCRYPT_VERSION}/dnscrypt-proxy-linux_x86_64-${DNSCRYPT_VERSION}.tar.gz" | tar -zxv --strip-components=1 -C ${INSTALL_DNSCRYPT_DIR}
-    cp ${INSTALL_DNSCRYPT_DIR}/example-dnscrypt-proxy.toml ${INSTALL_DNSCRYPT_DIR}/dnscrypt-proxy.toml
-    sed -i "s/# server_names = \['.+'\]/server_names = \['cloudflare', 'cloudflare-ipv6'\]/" ${INSTALL_DNSCRYPT_DIR}/dnscrypt-proxy.toml
-    sed -i "s/listen_addresses = \['127\.0\.0\.1:53'\]/listen_addresses = \['127\.0\.0\.1:53', '\[::1\]:53'\]/" ${INSTALL_DNSCRYPT_DIR}/dnscrypt-proxy.toml
-    printf "
-[main]
-dns=none
-" | sudo tee /etc/NetworkManager/conf.d/99-dnscrypt.conf
-    sudo systemctl restart NetworkManager
-    sudo systemctl stop systemd-resolved
-    sudo systemctl disable systemd-resolved
-    sudo apt -y remove resolvconf
-    sudo cp /etc/resolv.conf /etc/resolv.conf.backup
-    sudo rm -f /etc/resolv.conf
-    printf "
-nameserver 127.0.0.1
-options edns0
-" | sudo tee /etc/resolv.conf
-fi
