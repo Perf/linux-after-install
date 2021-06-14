@@ -7,7 +7,7 @@ mkdir -p ~/bin
 # Install Jetbrains Toolbox
 while true
 do
-    printf "Installing Jetbrains Toolbox.\n"
+    printf "Install Jetbrains Toolbox?\n"
     printf "<Enter> for 'yes' | any other key for 'no'\n"
     read -p "Jetbrains Toolbox [<Enter>|any key]: " answer
     case ${answer} in
@@ -18,7 +18,7 @@ do
               sudo sysctl -p --system
               break;;
 
-        * )   printf "Skipping Jetbrains Toolbox installation\n"
+        * )   printf "Skipping\n"
               break;;
     esac
 done
@@ -26,7 +26,7 @@ done
 # Install Docker and Docker Compose
 while true
 do
-    printf "Installing Docker and Docker Compose.\n"
+    printf "Install Docker and Docker Compose?\n"
     printf "<Enter> for 'yes' | any other key for 'no'\n"
     read -p "Docker and Docker Compose [<Enter>|any key]: " answer
     case ${answer} in
@@ -35,7 +35,7 @@ do
               sudo usermod -a -G docker ${USER}
               break;;
 
-        * )   printf "Skipping Docker and Docker Compose installation\n"
+        * )   printf "Skipping\n"
               break;;
     esac
 done
@@ -43,7 +43,7 @@ done
 # Install CTop to view running containers
 while true
 do
-    printf "Installing ctop.\n"
+    printf "Install ctop?\n"
     printf "Read https://github.com/bcicen/ctop for details.\n"
     printf "<Enter> for 'yes' | any other key for 'no'\n"
     read -p "ctop [<Enter>|any key]: " answer
@@ -54,14 +54,15 @@ do
               sudo chmod +x /usr/local/bin/ctop
               break;;
 
-        * )   printf "Skipping ctop installation\n"
+        * )   printf "Skipping\n"
               break;;
     esac
 done
 
+# Install Slack
 while true
 do
-    printf "Installing Slack.\n"
+    printf "Install Slack?\n"
     printf "<Enter> for 'yes' | any other key for 'no'\n"
     read -p "Slack [<Enter>|any key]: " answer
     case ${answer} in
@@ -72,15 +73,29 @@ do
               rm slack.deb
               break;;
 
-        * )   printf "Skipping Slack installation\n"
+        * )   printf "Skipping\n"
               break;;
     esac
 done
 
-# Install Phpstorm url handler
-# sudo apt -y install desktop-file-utils
-# cp bin/phpstorm-url-handler ~/bin
-# sudo desktop-file-install --rebuild-mime-info-cache bin/phpstorm-url-handler.desktop
+# Install PhpStorm URL handler
+while true
+do
+    printf "Install PhpStorm URL handler?\n"
+    printf "<Enter> for 'yes' | any other key for 'no'\n"
+    read -p "PhpStorm URL handler [<Enter>|any key]: " answer
+    case ${answer} in
+        '' )  printf "Installing PhpStorm URL handler\n"
+              sudo apt -y install desktop-file-utils
+              cp bin/phpstorm-url-handler ~/bin
+              chmod +x ~/bin/phpstorm-url-handler
+              sudo desktop-file-install --rebuild-mime-info-cache bin/phpstorm-url-handler.desktop
+              break;;
+
+        * )   printf "Skipping\n"
+              break;;
+    esac
+done
 
 # Install NVM and Node.js
 #NVM_VERSION=$(curl --silent 'https://api.github.com/repos/nvm-sh/nvm/releases/latest' | jq '.name' -r)

@@ -13,10 +13,13 @@ printf "
 [main]
 dns=none
 " | sudo tee /etc/NetworkManager/conf.d/99-dnscrypt.conf
+
 sudo systemctl restart NetworkManager
+
 sudo systemctl stop systemd-resolved
 sudo systemctl disable systemd-resolved
 sudo apt -y remove resolvconf
+
 sudo cp /etc/resolv.conf /etc/resolv.conf.backup
 sudo rm -f /etc/resolv.conf
 printf "

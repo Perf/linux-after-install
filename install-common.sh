@@ -5,7 +5,7 @@ set -eu
 # Get rid of snapd
 while true
 do
-    printf "Uninstalling snapd.\n"
+    printf "Remove snapd?\n"
     printf "<Enter> for 'yes' | any other key for 'no'\n"
     read -p "remove snapd [<Enter>|any key]: " answer
     case ${answer} in
@@ -14,16 +14,16 @@ do
               apt-mark hold snapd
               break;;
 
-        * )   printf "Keeping snapd\n"
+        * )   printf "Skipping\n"
               break;;
     esac
 done
 
 # set hostname
-OLD_HOSTNAME="$(hostname)"
+OLD_HOSTNAME=$(hostname)
 while true
 do
-    printf "Setting hostname.\n"
+    printf "Set new hostname?\n"
     printf "<Enter> to keep current '%s' | type in new hostname\n" ${OLD_HOSTNAME}
     read -p "hostname [<Enter>|string]: " answer
     case ${answer} in
@@ -38,11 +38,11 @@ do
 done
 
 # set swappiness
-NEW_SWAPPINESS="10"
-OLD_SWAPPINESS="$(cat /proc/sys/vm/swappiness)"
+NEW_SWAPPINESS=10
+OLD_SWAPPINESS=$(cat /proc/sys/vm/swappiness)
 while true
 do
-    printf "Decreasing swappiness.\n"
+    printf "Decrease swappiness?\n"
     printf "Enter new swappiness number | <Enter> to use recommended '%d' | 'c' to keep current '%d'\n" ${NEW_SWAPPINESS} ${OLD_SWAPPINESS}
     read -p "vm.swappiness [integer|<Enter>|c]: " answer
     case ${answer} in
@@ -67,10 +67,10 @@ fi
 # add Oibaf video drivers PPA
 while true
 do
-    printf "Adding Oibaf graphics drivers repository.\n"
+    printf "Add Oibaf graphics drivers repository?\n"
     printf "Read https://launchpad.net/~oibaf/+archive/ubuntu/graphics-drivers for details.\n"
     printf "<Enter> for 'yes' | any other key for 'no'\n"
-    read -p "add Oibaf repo [<Enter>|any key]: " answer
+    read -p "Oibaf repo [<Enter>|any key]: " answer
     case ${answer} in
         '' )  printf "Adding Oibaf repository\n"
               sudo add-apt-repository -y ppa:oibaf/graphics-drivers
@@ -84,10 +84,10 @@ done
 # add Kubuntu backports PPA
 while true
 do
-    printf "Adding Kubuntu Backport repository (KDE Plasma, etc...).\n"
+    printf "Add Kubuntu Backport repository (KDE Plasma, etc...).\n"
     printf "Read https://launchpad.net/~kubuntu-ppa/+archive/ubuntu/backports for details.\n"
     printf "<Enter> for 'yes' | any other key for 'no'\n"
-    read -p "add Kubuntu backports repo [<Enter>|any key]: " answer
+    read -p "Kubuntu Backports repo [<Enter>|any key]: " answer
     case ${answer} in
         '' )  printf "Adding Kubuntu backports repository\n"
               sudo add-apt-repository -y ppa:kubuntu-ppa/backports
@@ -110,15 +110,14 @@ sudo apt -y install \
     jq \
     wget \
     curl \
-    inxi \
-    mc
+    inxi
 
 # Google Chrome
 while true
 do
-    printf "Installing Google Chrome.\n"
+    printf "Install Google Chrome?\n"
     printf "<Enter> for 'yes' | any other key for 'no'\n"
-    read -p "install Google Chrome [<Enter>|any key]: " answer
+    read -p "Google Chrome [<Enter>|any key]: " answer
     case ${answer} in
         '' )  printf "Installing Google Chrome\n"
               wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
@@ -126,7 +125,7 @@ do
               rm google-chrome-stable_current_amd64.deb
               break;;
 
-        * )   printf "Skipping Google Chrome installation\n"
+        * )   printf "Skipping\n"
               break;;
     esac
 done
@@ -134,9 +133,9 @@ done
 ## Microsoft Edge
 while true
 do
-    printf "Installing latest Microsoft Edge (Beta).\n"
+    printf "Install Microsoft Edge (Beta)?\n"
     printf "<Enter> for 'yes' | any other key for 'no'\n"
-    read -p "[<Enter>|any key]: " answer
+    read -p "Microsoft Edge [<Enter>|any key]: " answer
     case ${answer} in
         '' )  printf "Installing Microsoft Edge\n"
               curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
@@ -146,7 +145,7 @@ do
               sudo apt -y update && sudo apt -y install microsoft-edge-beta
               break;;
 
-        * )   printf "Skipping Microsoft Edge installation\n"
+        * )   printf "Skipping\n"
               break;;
     esac
 done
@@ -154,9 +153,9 @@ done
 # Skype
 while true
 do
-    printf "Installing Skype.\n"
+    printf "Install Skype?\n"
     printf "<Enter> for 'yes' | any other key for 'no'\n"
-    read -p "[<Enter>|any key]: " answer
+    read -p "Skype [<Enter>|any key]: " answer
     case ${answer} in
         '' )  printf "Installing Skype\n"
               wget https://go.skype.com/skypeforlinux-64.deb
@@ -164,7 +163,7 @@ do
               rm skypeforlinux-64.deb
               break;;
 
-        * )   printf "Skipping Skype installation\n"
+        * )   printf "Skipping\n"
               break;;
     esac
 done
@@ -172,9 +171,9 @@ done
 # Signal
 while true
 do
-    printf "Installing Signal.\n"
+    printf "Install Signal?\n"
     printf "<Enter> for 'yes' | any other key for 'no'\n"
-    read -p "[<Enter>|any key]: " answer
+    read -p "Signal [<Enter>|any key]: " answer
     case ${answer} in
         '' )  printf "Installing Signal\n"
               wget -O- https://updates.signal.org/desktop/apt/keys.asc | gpg --dearmor > signal-desktop-keyring.gpg
@@ -183,7 +182,7 @@ do
               sudo apt -y update && sudo apt -y install signal-desktop
               break;;
 
-        * )   printf "Skipping Signal installation\n"
+        * )   printf "Skipping\n"
               break;;
     esac
 done
@@ -195,5 +194,3 @@ sudo apt -y autoremove
 # disable KDE Baloo indexer
 balooctl disable
 balooctl purge
-
-# dns proxy

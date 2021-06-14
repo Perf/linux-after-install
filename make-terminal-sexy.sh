@@ -2,13 +2,13 @@
 
 set -eu
 
+# install shell apps
+sudo apt -y install fontconfig mc vim git socat konsole yakuake powerline powerline-gitstatus
+
 # install custom fonts and update font cache
 mkdir -p ~/.local/share/fonts
 cp -r .local/share/fonts/* ~/.local/share/fonts
 fc-cache -f
-
-# install shell apps
-sudo apt -y install mc vim git socat konsole yakuake powerline powerline-gitstatus
 
 # enable powerline for login shells
 sudo ln -s /usr/share/powerline/integrations/powerline.sh /etc/profile.d/zz-powerline.sh
