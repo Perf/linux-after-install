@@ -4,7 +4,7 @@ A set of scripts that will make your life easier right after you installed a fre
 `install-common.sh`
 - Remove snapd
 - Set new hostname
-- Decrease swapiness
+- Set new swapiness
 - Add [Oibaf graphics drivers](https://launchpad.net/~oibaf/+archive/ubuntu/graphics-drivers) repository
 - Add [Kubuntu Backports](https://launchpad.net/~kubuntu-ppa/+archive/ubuntu/backports) repository
 - Install Google Chrome
@@ -18,7 +18,10 @@ A set of scripts that will make your life easier right after you installed a fre
 - Install Docker and Docker Compose
 - Install [ctop](https://github.com/bcicen/ctop)
 - Install Slack
+- Install Microsoft Teams
 - Install PhpStorm URL handler
+- Install AWS CLI v2
+- Install K8s Lens
 
 `make-terminal-sexy.sh`
 - Install git, vim, mc, yakuake, powerline, ...
