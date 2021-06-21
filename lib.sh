@@ -10,8 +10,11 @@ function remove_snapd() {
       read -p "remove snapd [<Enter>|any key]: " answer
       case ${answer} in
           '' )  printf ">> Removing snapd\n"
-                sudo snap remove --purge $(snap list | awk '/^([a-z0-9-])./ {printf "%s ", $1}')
-                sudo umount /var/snap
+                # check if any snaps 1st
+                #sudo snap remove --purge $(snap list | awk '/^([a-z0-9-])./ {printf "%s ", $1}')
+
+                # check if mounted
+                #sudo umount /var/snap
                 sudo apt -y remove --purge snapd
                 sudo rm -rf ~/snap /snap /var/snap /var/lib/snapd /var/cache/snapd
                 sudo apt-mark hold snapd
@@ -341,6 +344,43 @@ function install_k8s_lens() {
   done
 }
 
+function install_zoom() {
+  while true
+  do
+      printf "\n\nInstall Zoom?\n"
+      printf "<Enter> for 'yes' | any other key for 'no'\n"
+      read -p "Zoom [<Enter>|any key]: " answer
+      case ${answer} in
+          '' )  printf ">> Installing Zoom\n"
+                wget https://zoom.us/client/latest/zoom_amd64.deb
+                sudo dpkg -i zoom_amd64.deb || sudo apt -yf install
+                rm zoom_amd64.deb
+                break;;
+
+          * )   printf ">> Skipping\n"
+                break;;
+      esac
+  done
+}
+
+function install_atom() {
+  while true
+  do
+      printf "\n\nInstall Atom?\n"
+      printf "<Enter> for 'yes' | any other key for 'no'\n"
+      read -p "Zoom [<Enter>|any key]: " answer
+      case ${answer} in
+          '' )  printf ">> Installing Atom\n"
+                wget https://atom.io/download/deb -O _atom.deb
+                sudo dpkg -i _atom.deb || sudo apt -yf install
+                rm _atom.deb
+                break;;
+
+          * )   printf ">> Skipping\n"
+                break;;
+      esac
+  done
+}
 
 # Install NVM and Node.js
 #NVM_VERSION=$(curl --silent 'https://api.github.com/repos/nvm-sh/nvm/releases/latest' | jq '.name' -r)

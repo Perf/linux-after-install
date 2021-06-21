@@ -11,9 +11,11 @@ A set of scripts that will make your life easier right after you installed a fre
 - Install Microsoft Edge (Beta)
 - Install Skype
 - Install Signal
+- Install Zoom
 - perform full system upgrade and disable KDE Baloo indexer
 
 `install-development.sh`
+- Install Atom
 - Install Jetbrains Toolbox
 - Install Docker and Docker Compose
 - Install [ctop](https://github.com/bcicen/ctop)

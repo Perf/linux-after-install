@@ -4,15 +4,15 @@ set -eu
 
 source ./lib.sh
 
-remove_snapd()
+remove_snapd
 
-set_hostname()
+set_hostname
 
-set_swappiness()
+set_swappiness
 
-add_oibaf_repo()
+add_oibaf_repo
 
-add_kubuntu_backports_repo()
+add_kubuntu_backports_repo
 
 # perform full update/upgrade
 sudo apt -y update
@@ -28,13 +28,15 @@ sudo apt -y install \
     curl \
     inxi
 
-install_google_chrome()
+install_google_chrome
 
-install_microsoft_edge()
+install_microsoft_edge
 
-install_skype()
+install_skype
 
-install_signal()
+install_signal
+
+install_zoom
 
 # apt cleanup
 sudo apt -y autoclean

@@ -6,18 +6,20 @@ source ./lib.sh
 
 mkdir -p ~/bin
 
-install_jetbrains_toolbox()
+install_atom
 
-install_docker_and_docker_compose()
+install_jetbrains_toolbox
 
-install_ctop()
+install_docker_and_docker_compose
 
-install_slack()
+install_ctop
 
-install_microsoft_teams()
+install_slack
 
-install_phpstorm_url_handler()
+install_microsoft_teams
 
-install_aws_cli()
+install_phpstorm_url_handler
 
-install_k8s_lens()
+install_aws_cli
+
+install_k8s_lens
