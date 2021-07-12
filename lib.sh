@@ -234,8 +234,8 @@ function install_ctop() {
       read -p "ctop [<Enter>|any key]: " answer
       case ${answer} in
           '' )  printf ">> Installing ctop\n"
-                local CTOP_VERSION=$(curl --silent 'https://api.github.com/repos/bcicen/ctop/releases/latest' | jq '.name' -r)
-                sudo curl -L "https://github.com/bcicen/ctop/releases/download/v${CTOP_VERSION}/ctop-${CTOP_VERSION}-linux-amd64" -o /usr/local/bin/ctop
+                local CTOP_VERSION=$(curl --silent 'https://api.github.com/repos/bcicen/ctop/releases/latest' | jq '.tag_name' -r)
+                sudo curl -L "https://github.com/bcicen/ctop/releases/download/${CTOP_VERSION}/ctop-${CTOP_VERSION}-linux-amd64" -o /usr/local/bin/ctop
                 sudo chmod +x /usr/local/bin/ctop
                 break;;
 
