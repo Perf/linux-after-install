@@ -26,7 +26,9 @@ sudo apt -y install \
     jq \
     wget \
     curl \
-    inxi
+    inxi \
+    apt-transport-https \
+    fwupd-signed
 
 install_google_chrome
 

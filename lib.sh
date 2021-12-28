@@ -2,6 +2,8 @@
 
 set -eu
 
+mkdir -p ~/bin
+
 function remove_snapd() {
   while true
   do
@@ -332,8 +334,7 @@ function install_k8s_lens() {
       read -p "K8s Lens [<Enter>|any key]: " answer
       case ${answer} in
           '' )  printf ">> Installing K8s Lens\n"
-                local LENS_VERSION=$(curl --silent 'https://api.github.com/repos/lensapp/lens/releases/latest' | jq '.name' -r)
-                wget "https://github.com/lensapp/lens/releases/download/v${LENS_VERSION}/Lens-${LENS_VERSION}.amd64.deb" -O _lens.deb
+                wget https://api.k8slens.dev/binaries/Lens-5.2.7-latest.20211110.1.amd64.deb -O _lens.deb
                 sudo dpkg -i _lens.deb || sudo apt -yf install
                 rm _lens.deb
                 break;;
@@ -374,6 +375,60 @@ function install_atom() {
                 wget https://atom.io/download/deb -O _atom.deb
                 sudo dpkg -i _atom.deb || sudo apt -yf install
                 rm _atom.deb
+                break;;
+
+          * )   printf ">> Skipping\n"
+                break;;
+      esac
+  done
+}
+
+function install_brave() {
+  while true
+  do
+      printf "\n\nInstall Brave browser?\n"
+      printf "<Enter> for 'yes' | any other key for 'no'\n"
+      read -p "Brave [<Enter>|any key]: " answer
+      case ${answer} in
+          '' )  printf ">> Installing Brave\n"
+                sudo curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
+                printf "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main" | sudo tee /etc/apt/sources.list.d/brave-browser-release.list
+                sudo apt -y update && sudo apt -y install brave-browser
+                break;;
+
+          * )   printf ">> Skipping\n"
+                break;;
+      esac
+  done
+}
+
+function install_ledger_live() {
+  while true
+  do
+      printf "\n\nInstall Ledger Live?\n"
+      printf "<Enter> for 'yes' | any other key for 'no'\n"
+      read -p "Ledger Live [<Enter>|any key]: " answer
+      case ${answer} in
+          '' )  printf ">> Installing Ledge udev rules\n"
+                wget https://download-live.ledger.com/releases/latest/download/linux -q -O ~/bin/ledger-live.AppImage
+                chmod +x ~/bin/ledger-live.AppImage
+                break;;
+
+          * )   printf ">> Skipping\n"
+                break;;
+      esac
+  done
+}
+
+function install_ledger_udev_rules() {
+  while true
+  do
+      printf "\n\nInstall Ledger udev rules?\n"
+      printf "<Enter> for 'yes' | any other key for 'no'\n"
+      read -p "Ledger udev [<Enter>|any key]: " answer
+      case ${answer} in
+          '' )  printf ">> Installing Ledger udev rules\n"
+                wget -q -O - https://raw.githubusercontent.com/LedgerHQ/udev-rules/master/add_udev_rules.sh | sudo bash
                 break;;
 
           * )   printf ">> Skipping\n"

@@ -4,8 +4,6 @@ set -eu
 
 source ./lib.sh
 
-mkdir -p ~/bin
-
 install_atom
 
 install_jetbrains_toolbox
