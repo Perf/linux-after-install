@@ -409,9 +409,12 @@ function install_ledger_live() {
       printf "<Enter> for 'yes' | any other key for 'no'\n"
       read -p "Ledger Live [<Enter>|any key]: " answer
       case ${answer} in
-          '' )  printf ">> Installing Ledge udev rules\n"
-                wget https://download-live.ledger.com/releases/latest/download/linux -q -O ~/bin/ledger-live.AppImage
-                chmod +x ~/bin/ledger-live.AppImage
+          '' )  printf ">> Installing Ledger Live\n"
+                wget https://download-live.ledger.com/releases/latest/download/linux -q -O ~/bin/ledger-live-desktop.AppImage
+                chmod +x ~/bin/ledger-live-desktop.AppImage
+                cp .local/share/applications/ledgerlive.desktop ~/.local/share/applications/ledgerlive.desktop
+                update-desktop-database ~/.local/share/applications
+                xdg-mime default ledgerlive.desktop x-scheme-handler/ledgerlive
                 break;;
 
           * )   printf ">> Skipping\n"

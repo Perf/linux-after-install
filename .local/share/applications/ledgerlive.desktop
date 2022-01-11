@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.0
+Name=Ledger Live
+Exec=~/bin/ledger-live-desktop.AppImage %u
+Type=Application
+Categories=Finance;
+Terminal=false
+MimeType=x-scheme-handler/ledgerlive;
