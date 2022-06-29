@@ -258,8 +258,8 @@ function install_slack() {
       read -p "Slack [<Enter>|any key]: " answer
       case ${answer} in
           '' )  printf ">> Installing Slack\n"
-                local SLACK_VERSION=$(curl -silent "https://slack.com/intl/en-de/release-notes/linux" | grep -m 1 -o -E "<h2>Slack [0-9]+\.[0-9]+\.[0-9]+" | grep -m 1 -o -E "[0-9]+\.[0-9]+\.[0-9]+")
-                wget "https://downloads.slack-edge.com/linux_releases/slack-desktop-${SLACK_VERSION}-amd64.deb" -O _slack.deb
+                local SLACK_VERSION=$(curl -silent "https://slack.com/release-notes/linux" | grep -m 1 -o -E "<h2>Slack [0-9]+\.[0-9]+\.[0-9]+" | grep -m 1 -o -E "[0-9]+\.[0-9]+\.[0-9]+")
+                wget "https://downloads.slack-edge.com/releases/linux/${SLACK_VERSION}/prod/x64/slack-desktop-${SLACK_VERSION}-amd64.deb" -O _slack.deb
                 sudo dpkg -i _slack.deb || sudo apt -yf install
                 rm _slack.deb
                 break;;
@@ -337,9 +337,9 @@ function install_k8s_lens() {
       read -p "K8s Lens [<Enter>|any key]: " answer
       case ${answer} in
           '' )  printf ">> Installing K8s Lens\n"
-                wget https://api.k8slens.dev/binaries/Lens-5.2.7-latest.20211110.1.amd64.deb -O _lens.deb
-                sudo dpkg -i _lens.deb || sudo apt -yf install
-                rm _lens.deb
+                wget https://api.k8slens.dev/binaries/latest.amd64.deb
+                sudo dpkg -i latest.amd64.deb || sudo apt -yf install
+                rm latest.amd64.deb
                 break;;
 
           * )   printf ">> Skipping\n"
@@ -372,7 +372,7 @@ function install_atom() {
   do
       printf "\n\nInstall Atom?\n"
       printf "<Enter> for 'yes' | any other key for 'no'\n"
-      read -p "Zoom [<Enter>|any key]: " answer
+      read -p "Atom [<Enter>|any key]: " answer
       case ${answer} in
           '' )  printf ">> Installing Atom\n"
                 wget https://atom.io/download/deb -O _atom.deb
