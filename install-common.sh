@@ -40,6 +40,8 @@ install_signal
 
 install_zoom
 
+install_discord
+
 # apt cleanup
 sudo apt -y autoclean
 sudo apt -y autoremove

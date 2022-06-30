@@ -118,7 +118,7 @@ function install_google_chrome() {
       read -p "Google Chrome [<Enter>|any key]: " answer
       case ${answer} in
           '' )  printf ">> Installing Google Chrome\n"
-                wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -O _google_chrome.deb
+                wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -O _google_chrome.deb
                 sudo dpkg -i _google_chrome.deb || sudo apt -yf install
                 rm _google_chrome.deb
                 break;;
@@ -158,7 +158,7 @@ function install_skype() {
       read -p "Skype [<Enter>|any key]: " answer
       case ${answer} in
           '' )  printf ">> Installing Skype\n"
-                wget https://go.skype.com/skypeforlinux-64.deb
+                wget -q https://go.skype.com/skypeforlinux-64.deb
                 sudo dpkg -i skypeforlinux-64.deb || sudo apt -yf install
                 rm skypeforlinux-64.deb
                 break;;
@@ -259,7 +259,7 @@ function install_slack() {
       case ${answer} in
           '' )  printf ">> Installing Slack\n"
                 local SLACK_VERSION=$(curl -silent "https://slack.com/release-notes/linux" | grep -m 1 -o -E "<h2>Slack [0-9]+\.[0-9]+\.[0-9]+" | grep -m 1 -o -E "[0-9]+\.[0-9]+\.[0-9]+")
-                wget "https://downloads.slack-edge.com/releases/linux/${SLACK_VERSION}/prod/x64/slack-desktop-${SLACK_VERSION}-amd64.deb" -O _slack.deb
+                wget -q "https://downloads.slack-edge.com/releases/linux/${SLACK_VERSION}/prod/x64/slack-desktop-${SLACK_VERSION}-amd64.deb" -O _slack.deb
                 sudo dpkg -i _slack.deb || sudo apt -yf install
                 rm _slack.deb
                 break;;
@@ -278,7 +278,7 @@ function install_microsoft_teams() {
       read -p "Microsoft Teams [<Enter>|any key]: " answer
       case ${answer} in
           '' )  printf ">> Installing Microsoft Teams\n"
-                wget https://teams.microsoft.com/downloads/desktopurl?env=production\&plat=linux\&arch=x64\&download=true\&linuxArchiveType=deb -O _teams.deb
+                wget -q https://teams.microsoft.com/downloads/desktopurl?env=production\&plat=linux\&arch=x64\&download=true\&linuxArchiveType=deb -O _teams.deb
                 sudo dpkg -i _teams.deb || sudo apt -yf install
                 rm _teams.deb
                 break;;
@@ -337,7 +337,7 @@ function install_k8s_lens() {
       read -p "K8s Lens [<Enter>|any key]: " answer
       case ${answer} in
           '' )  printf ">> Installing K8s Lens\n"
-                wget https://api.k8slens.dev/binaries/latest.amd64.deb
+                wget -q https://api.k8slens.dev/binaries/latest.amd64.deb
                 sudo dpkg -i latest.amd64.deb || sudo apt -yf install
                 rm latest.amd64.deb
                 break;;
@@ -356,7 +356,7 @@ function install_zoom() {
       read -p "Zoom [<Enter>|any key]: " answer
       case ${answer} in
           '' )  printf ">> Installing Zoom\n"
-                wget https://zoom.us/client/latest/zoom_amd64.deb
+                wget -q https://zoom.us/client/latest/zoom_amd64.deb
                 sudo dpkg -i zoom_amd64.deb || sudo apt -yf install
                 rm zoom_amd64.deb
                 break;;
@@ -375,7 +375,7 @@ function install_atom() {
       read -p "Atom [<Enter>|any key]: " answer
       case ${answer} in
           '' )  printf ">> Installing Atom\n"
-                wget https://atom.io/download/deb -O _atom.deb
+                wget -q https://atom.io/download/deb -O _atom.deb
                 sudo dpkg -i _atom.deb || sudo apt -yf install
                 rm _atom.deb
                 break;;
@@ -442,6 +442,26 @@ function install_ledger_udev_rules() {
       esac
   done
 }
+
+function install_discord() {
+  while true
+  do
+      printf "\n\nInstall Discord?\n"
+      printf "<Enter> for 'yes' | any other key for 'no'\n"
+      read -p "Discord [<Enter>|any key]: " answer
+      case ${answer} in
+          '' )  printf ">> Installing Discord\n"
+                wget -q "https://discord.com/api/download?platform=linux&format=deb" -O _discord.deb
+                sudo dpkg -i _discord.deb || sudo apt -yf install
+                rm _discord.deb
+                break;;
+
+          * )   printf ">> Skipping\n"
+                break;;
+      esac
+  done
+}
+
 
 # Install NVM and Node.js
 #NVM_VERSION=$(curl --silent 'https://api.github.com/repos/nvm-sh/nvm/releases/latest' | jq '.name' -r)
