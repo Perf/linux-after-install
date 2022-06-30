@@ -12,6 +12,7 @@ A set of scripts that will make your life easier right after you installed a fre
 - Install Skype
 - Install Signal
 - Install Zoom
+- Install Discord
 - perform full system upgrade and disable KDE Baloo indexer
 
 `install-development.sh`
@@ -30,10 +31,14 @@ A set of scripts that will make your life easier right after you installed a fre
 - Install [mononoki Nerd Font](https://github.com/ryanoasis/nerd-fonts/tree/master/patched-fonts/Mononoki)
 - Copy predefined configs
 
+`fix-dns.sh`
+
+Ubuntu-based distros has a DNS name resolution issue with `systemd-resolved`.
+Most easy and common way to fix it is to change symlink or /etc/resolv.conf to point to correct file.
+
 `fix-dns-with-dnsmasq.sh`
 
-Ubuntu-based distros has a DNS resolution issue with `systemd-resolved`.
-The solution is to replace it with `dnsmasq`. Fast and easy.
+Other solution is to replace it with `dnsmasq`. Fast and easy.
 
 `fix-dns-with-dnscrypt.sh`
 
