@@ -132,16 +132,16 @@ function install_google_chrome() {
 function install_microsoft_edge() {
   while true
   do
-      printf "\n\nInstall Microsoft Edge (Beta)?\n"
+      printf "\n\nInstall Microsoft Edge?\n"
       printf "<Enter> for 'yes' | any other key for 'no'\n"
       read -p "Microsoft Edge [<Enter>|any key]: " answer
       case ${answer} in
           '' )  printf ">> Installing Microsoft Edge\n"
                 curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
                 sudo install -o root -g root -m 644 microsoft.gpg /etc/apt/trusted.gpg.d/
-                sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/edge stable main" > /etc/apt/sources.list.d/microsoft-edge-beta.list'
+                sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/edge stable main" > /etc/apt/sources.list.d/microsoft-edge.list'
                 sudo rm microsoft.gpg
-                sudo apt -y update && sudo apt -y install microsoft-edge-beta
+                sudo apt -y update && sudo apt -y install microsoft-edge-stable
                 break;;
 
           * )   printf ">> Skipping\n"
