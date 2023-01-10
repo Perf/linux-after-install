@@ -20,4 +20,4 @@ install_phpstorm_url_handler
 
 install_aws_cli
 
-install_k8s_lens
+install_k8s_openlens

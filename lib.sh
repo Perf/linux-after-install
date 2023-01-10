@@ -331,17 +331,24 @@ function install_aws_cli() {
   done
 }
 
-function install_k8s_lens() {
+function install_k8s_openlens() {
   while true
   do
-      printf "\n\nInstall K8s Lens?\n"
+      printf "\n\nInstall K8s Open Lens v.6.2.0?\n"
       printf "<Enter> for 'yes' | any other key for 'no'\n"
-      read -p "K8s Lens [<Enter>|any key]: " answer
+      read -p "K8s Open Lens [<Enter>|any key]: " answer
       case ${answer} in
-          '' )  printf ">> Installing K8s Lens\n"
-                wget -q https://api.k8slens.dev/binaries/latest.amd64.deb
-                sudo dpkg -i latest.amd64.deb || sudo apt -yf install
-                rm latest.amd64.deb
+          '' )  printf ">> Installing K8s Open Lens\n"
+                curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+                sudo apt update
+                sudo apt install -y nodejs
+                sudo npm install -g yarn
+                git clone https://github.com/lensapp/lens.git /tmp/openlens
+                cd /tmp/openlens
+                git checkout v6.2.0
+                make build
+                sudo dpkg -i dist/OpenLens-6.2.0.amd64.deb
+                rm -rf /tmp/openlens
                 break;;
 
           * )   printf ">> Skipping\n"
