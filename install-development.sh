@@ -14,8 +14,6 @@ install_ctop
 
 install_slack
 
-install_microsoft_teams
-
 install_phpstorm_url_handler
 
 install_aws_cli

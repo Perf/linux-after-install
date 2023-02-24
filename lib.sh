@@ -272,25 +272,6 @@ function install_slack() {
   done
 }
 
-function install_microsoft_teams() {
-  while true
-  do
-      printf "\n\nInstall Microsoft Teams?\n"
-      printf "<Enter> for 'yes' | any other key for 'no'\n"
-      read -p "Microsoft Teams [<Enter>|any key]: " answer
-      case ${answer} in
-          '' )  printf ">> Installing Microsoft Teams\n"
-                wget -q https://teams.microsoft.com/downloads/desktopurl?env=production\&plat=linux\&arch=x64\&download=true\&linuxArchiveType=deb -O _teams.deb
-                sudo dpkg -i _teams.deb || sudo apt -yf install
-                rm _teams.deb
-                break;;
-
-          * )   printf ">> Skipping\n"
-                break;;
-      esac
-  done
-}
-
 function install_phpstorm_url_handler() {
   while true
   do
