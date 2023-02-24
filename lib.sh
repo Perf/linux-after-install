@@ -8,6 +8,7 @@ function remove_snapd() {
   while true
   do
       printf "\n\nRemove snapd?\n"
+      printf "Troubleshoot: https://www.debugpoint.com/remove-snap-ubuntu/"
       printf "<Enter> for 'yes' | any other key for 'no'\n"
       read -p "remove snapd [<Enter>|any key]: " answer
       case ${answer} in
@@ -17,7 +18,19 @@ function remove_snapd() {
 
                 # check if mounted
                 #sudo umount /var/snap
-                sudo apt -y remove --purge snapd
+
+                # TODO: make proper snapd removal
+                sudo unmount /var/snap/firefox/common/host-hunspell
+                sudo snap remove --purge firefox
+                sudo snap remove --purge snap-store
+                sudo snap remove --purge gnome-3-38-2004
+                sudo snap remove --purge gtk-common-themes
+                sudo snap remove --purge snapd-desktop-integration
+                sudo snap remove --purge bare
+                sudo snap remove --purge core20
+                sudo snap remove --purge snapd
+
+                sudo apt -y remove --purge --autoremove snapd
                 sudo rm -rf ~/snap /snap /var/snap /var/lib/snapd /var/cache/snapd
                 sudo apt-mark hold snapd
                 break;;
@@ -403,7 +416,7 @@ function install_ledger_live() {
       read -p "Ledger Live [<Enter>|any key]: " answer
       case ${answer} in
           '' )  printf ">> Installing Ledger Live\n"
-                wget https://download-live.ledger.com/releases/latest/download/linux -q -O ~/bin/ledger-live-desktop.AppImage
+                wget https://download.live.ledger.com/latest/linux -q -O ~/bin/ledger-live-desktop.AppImage
                 chmod +x ~/bin/ledger-live-desktop.AppImage
                 cp .local/share/applications/ledgerlive.desktop ~/.local/share/applications/ledgerlive.desktop
                 update-desktop-database ~/.local/share/applications
