@@ -8,7 +8,7 @@ function remove_snapd() {
   while true
   do
       printf "\n\nRemove snapd?\n"
-      printf "Troubleshoot: https://www.debugpoint.com/remove-snap-ubuntu/"
+      printf "Troubleshoot: https://www.debugpoint.com/remove-snap-ubuntu/\n"
       printf "<Enter> for 'yes' | any other key for 'no'\n"
       read -p "remove snapd [<Enter>|any key]: " answer
       case ${answer} in
@@ -315,7 +315,7 @@ function install_aws_cli() {
           '' )  printf ">> Installing AWS CLI v2\n"
                 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
                 unzip awscliv2.zip
-                sudo ./aws/install
+                sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
                 rm -rf ./aws awscliv2.zip
                 break;;
 
