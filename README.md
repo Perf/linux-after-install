@@ -1,6 +1,6 @@
-# Linux After Install
+# linux-after-install
 
-A comprehensive set of configuration scripts to streamline post-installation setup of Kubuntu and other Ubuntu-based distributions. These scripts automate common setup tasks, install essential software, and configure system settings for optimal performance.
+A comprehensive set of configuration scripts to streamline post-installation setup of **Kubuntu** and other Ubuntu-based distributions. These scripts automate common setup tasks, install essential software, and configure system settings for optimal performance.
 
 ## Core Features
 
