@@ -25,8 +25,6 @@ Basic system setup and common applications:
   - Google Chrome
   - Microsoft Edge
 - Communication Tools:
-  - Skype
-  - Signal
   - Zoom
   - Discord
 - System Maintenance:
@@ -36,18 +34,19 @@ Basic system setup and common applications:
 ### install-development.sh
 Development environment setup:
 - IDEs and Text Editors:
-  - Atom
+  - Visual Studio Code
+  - Cursor IDE
   - JetBrains Toolbox
 - Containerization:
-  - Docker
-  - Docker Compose
+  - Docker & Docker Compose
+  - Podman & Podman Desktop
   - ctop (container monitoring)
 - Cloud & DevOps:
   - AWS CLI v2
-  - K8s Lens (Kubernetes IDE)
+  - Kubernetes tools (kubectl, helm, k9s)
+  - K8s Lens Desktop
 - Collaboration:
   - Slack
-  - Microsoft Teams
 - Additional Tools:
   - PhpStorm URL handler
 
@@ -61,26 +60,23 @@ Terminal enhancement suite:
   - powerline (status line)
 - Font Installation:
   - mononoki Nerd Font
-- Pre-configured settings for optimal terminal experience
+- Pre-configured settings for optimal terminal experience:
+  - Konsole
+  - Yakuake
+  - Vim
+  - Midnight Commander
+  - Powerline
 
 ### DNS Configuration Scripts
 
-#### fix-dns.sh
-Quick fix for Ubuntu's `systemd-resolved` DNS issues:
-- Corrects resolv.conf symlink
-- Basic DNS resolution fix
-
-#### fix-dns-with-dnsmasq.sh
-Alternative DNS solution using dnsmasq:
-- Replaces systemd-resolved
-- Lightweight and efficient DNS caching
 
 #### fix-dns-with-dnscrypt.sh
 Enhanced DNS security solution:
 - Implements [dnscrypt-proxy](https://github.com/DNSCrypt/dnscrypt-proxy)
 - Provides encrypted DNS queries
 - Enhanced privacy and security
-- Note: May require additional configuration with VPNs
+- Systemd service integration
+- Automatic updates and configuration
 
 ### Web3 Support (install-web3.0.sh)
 Blockchain development and cryptocurrency tools:
@@ -118,10 +114,10 @@ chmod +x *.sh
 ## Notes
 
 - Scripts are primarily designed for Kubuntu but should work on most Ubuntu-based distributions
-- Each installation step is interactive and can be skipped
+- Each (almost) installation step is interactive and can be skipped
 - System configuration changes can be customized during installation
 - All scripts include safety checks and error handling
-- DNS configuration scripts are mutually exclusive - choose one approach
+- Configuration files are provided for various tools and applications
 
 ## Contributing
 
