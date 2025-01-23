@@ -42,6 +42,8 @@ install_zoom
 
 install_discord
 
+install_anydesk
+
 # apt cleanup
 sudo apt -y autoclean
 sudo apt -y autoremove

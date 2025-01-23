@@ -17,7 +17,7 @@ function show_progress() {
     local message=$2
     local spin='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
     local i=0
-    
+
     while kill -0 $pid 2>/dev/null; do
         i=$(( (i+1) % ${#spin} ))
         printf "\r[%s] %s..." "${spin:$i:1}" "$message"
@@ -32,11 +32,11 @@ function prompt_user() {
     local message="${2}"
     local default="${3:-}"
     local options="${4:-}"        # For choice type
-    
+
     # Display formatted message with visual separator
     printf "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
     printf "🔹 %s\n" "$message"
-    
+
     case "$prompt_type" in
         "yes_no")
             printf "[Y/n]: "
@@ -70,39 +70,39 @@ function prompt_user() {
 function set_hostname() {
     local old_hostname
     old_hostname=$(hostname)
-    
+
     log "INFO" "Starting hostname configuration"
-    
+
     if ! prompt_user "yes_no" "Would you like to change the system hostname? Current: '$old_hostname'"; then
         log "INFO" "Hostname change skipped by user"
         return 0
     fi
-    
+
     # Get new hostname from user
     prompt_user "input" "Enter new hostname" "$old_hostname"
     local new_hostname
     new_hostname=$REPLY
-    
+
     if [[ ! "$new_hostname" =~ ^[a-zA-Z0-9-]+$ ]]; then
         log "ERROR" "Invalid hostname format. Hostname can only contain letters, numbers, and hyphens."
         return 1
     fi
-    
+
     if [[ "$new_hostname" == "$old_hostname" ]]; then
         log "INFO" "Hostname unchanged"
         return 0
     fi
-    
+
     printf "\nHostname changes to be applied:\n"
     printf "  Current: %s\n" "$old_hostname"
     printf "  New: %s\n" "$new_hostname"
-    
+
     if prompt_user "yes_no" "Apply these changes?"; then
         (
             sudo hostnamectl set-hostname "$new_hostname" &&
             sudo sed -i "s/127\.0\.1\.1\s.*/127.0.1.1\t${new_hostname}/" /etc/hosts
         ) & show_progress $! "Updating hostname"
-        
+
         if [[ "$(hostname)" == "$new_hostname" ]]; then
             log "INFO" "Hostname successfully changed to '$new_hostname'"
             return 0
@@ -118,10 +118,10 @@ function set_hostname() {
 
 function remove_snapd() {
     log "INFO" "Starting snapd removal process"
-    
+
     local installed_snaps
     installed_snaps=$(snap list 2>/dev/null | awk 'NR>1 {print $1}')
-    
+
     # Show current status
     if [[ -n "$installed_snaps" ]]; then
         local message="The following snap packages are installed and will be removed:\n$installed_snaps"
@@ -129,36 +129,36 @@ function remove_snapd() {
         local message="No snap packages are currently installed"
     fi
     message+="\n\n⚠️  Warning: This will completely remove snapd and all snap packages."
-    
+
     if ! prompt_user "yes_no" "$message"; then
         log "INFO" "Snapd removal cancelled"
         return 0
     fi
-    
+
     (
         log "INFO" "Stopping snapd services"
         sudo systemctl stop snapd.service snapd.socket snapd.seeded.service
-        
+
         log "INFO" "Removing snap packages"
         for snap in $(snap list 2>/dev/null | awk 'NR>1 {print $1}'); do
             log "INFO" "Removing snap package: $snap"
             sudo snap remove --purge "$snap"
         done
-        
+
         # Wait for snap processes
         while pgrep -a snap >/dev/null; do
             sleep 1
         done
-        
+
         log "INFO" "Unmounting snap volumes"
         for mnt in $(mount | grep snapd | cut -d' ' -f3); do
             sudo umount -l "$mnt" || true
         done
-        
+
         log "INFO" "Removing snapd package and configuration"
         sudo apt -y remove --purge snapd
         sudo apt -y autoremove --purge
-        
+
         log "INFO" "Removing snap directories and cache"
         sudo rm -rf \
             /var/cache/snapd/ \
@@ -166,21 +166,21 @@ function remove_snapd() {
             /var/snap/ \
             /snap/ \
             ~/snap/
-        
+
         log "INFO" "Removing remaining configuration"
         sudo rm -rf \
             /etc/snap/ \
             /usr/lib/snapd/ \
             /usr/share/snapd/ \
             /usr/share/keyrings/snapd.gpg
-        
+
         log "INFO" "Configuring system to prevent snapd reinstallation"
         sudo tee /etc/apt/preferences.d/nosnap.pref > /dev/null <<'EOF'
 Package: snapd
 Pin: release a=*
 Pin-Priority: -1
 EOF
-        
+
         # Handle Firefox replacement if needed
         if ! command -v firefox >/dev/null && prompt_user "yes_no" "Would you like to re-install Firefox from Mozilla PPA?"; then
             log "INFO" "Installing Firefox from Mozilla PPA"
@@ -193,9 +193,9 @@ EOF
             sudo apt update
             sudo apt install -y firefox
         fi
-        
+
     ) & show_progress $! "Removing snapd and related components"
-    
+
     log "INFO" "Snapd removal completed successfully"
     printf "\n💡 System changes made:\n"
     printf "   - All snap packages removed\n"
@@ -211,14 +211,14 @@ EOF
 function set_swappiness() {
     local new_swappiness=10
     local old_swappiness=$(cat /proc/sys/vm/swappiness)
-    
+
     log "INFO" "Starting swappiness configuration"
-    
+
     local message="Configure system swappiness?\nCurrent: $old_swappiness\nRecommended: $new_swappiness"
     local options="Use recommended ($new_swappiness),Keep current ($old_swappiness),Enter custom value"
     prompt_user "choice" "$message" "" "$options"
     local choice=$REPLY
-    
+
     case $choice in
         1) # Use recommended
             new_swappiness=10
@@ -231,7 +231,7 @@ function set_swappiness() {
             new_swappiness=$REPLY
             ;;
     esac
-    
+
     if [[ "$new_swappiness" != "$old_swappiness" ]]; then
         (
             printf "vm.swappiness = %d" "$new_swappiness" | sudo tee /etc/sysctl.d/swapiness.conf
@@ -245,9 +245,9 @@ function set_swappiness() {
 
 function add_oibaf_repo() {
     log "INFO" "Starting Oibaf graphics drivers repository configuration"
-    
+
     local message="Would you like to add Oibaf graphics drivers repository?\nRead https://launchpad.net/~oibaf/+archive/ubuntu/graphics-drivers for details."
-    
+
     if prompt_user "yes_no" "$message"; then
         (
             sudo add-apt-repository -y ppa:oibaf/graphics-drivers
@@ -260,9 +260,9 @@ function add_oibaf_repo() {
 
 function add_kubuntu_backports_repo() {
     log "INFO" "Starting Kubuntu Backports repository configuration"
-    
+
     local message="Would you like to add Kubuntu Backports repository?\nRead https://launchpad.net/~kubuntu-ppa/+archive/ubuntu/backports for details."
-    
+
     if prompt_user "yes_no" "$message"; then
         (
             sudo add-apt-repository -y ppa:kubuntu-ppa/backports
@@ -275,7 +275,7 @@ function add_kubuntu_backports_repo() {
 
 function install_google_chrome() {
     log "INFO" "Starting Google Chrome installation"
-    
+
     if prompt_user "yes_no" "Would you like to install Google Chrome?"; then
         (
             wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -O _google_chrome.deb
@@ -290,7 +290,7 @@ function install_google_chrome() {
 
 function install_microsoft_edge() {
     log "INFO" "Starting Microsoft Edge installation"
-    
+
     if prompt_user "yes_no" "Would you like to install Microsoft Edge?"; then
         (
             curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
@@ -307,7 +307,7 @@ function install_microsoft_edge() {
 
 # function install_skype() {
 #     log "INFO" "Starting Skype installation"
-    
+
 #     if prompt_user "yes_no" "Would you like to install Skype?"; then
 #         (
 #             wget -q https://go.skype.com/skypeforlinux-64.deb
@@ -322,7 +322,7 @@ function install_microsoft_edge() {
 
 # function install_signal() {
 #     log "INFO" "Starting Signal installation"
-    
+
 #     if prompt_user "yes_no" "Would you like to install Signal?"; then
 #         (
 #             wget -O- https://updates.signal.org/desktop/apt/keys.asc | gpg --dearmor > signal-desktop-keyring.gpg
@@ -338,7 +338,7 @@ function install_microsoft_edge() {
 
 function install_jetbrains_toolbox() {
     log "INFO" "Starting Jetbrains Toolbox installation"
-    
+
     if prompt_user "yes_no" "Would you like to install Jetbrains Toolbox?"; then
         (
             local JBT_VERSION
@@ -355,7 +355,7 @@ function install_jetbrains_toolbox() {
 
 function install_docker_and_docker_compose() {
     log "INFO" "Starting Docker and Docker Compose installation"
-    
+
     if prompt_user "yes_no" "Would you like to install Docker and Docker Compose?"; then
         (
             sudo apt -y install ca-certificates curl gnupg lsb-release
@@ -398,9 +398,9 @@ function install_podman_cli_and_desktop() {
 
 function install_ctop() {
     log "INFO" "Starting ctop installation"
-    
+
     local message="Would you like to install ctop?\nRead https://ctop.sh/ for details."
-    
+
     if prompt_user "yes_no" "$message"; then
         (
             local CTOP_VERSION
@@ -416,7 +416,7 @@ function install_ctop() {
 
 function install_slack() {
     log "INFO" "Starting Slack installation"
-    
+
     if prompt_user "yes_no" "Would you like to install Slack?"; then
         (
             local SLACK_VERSION
@@ -433,7 +433,7 @@ function install_slack() {
 
 function install_phpstorm_url_handler() {
     log "INFO" "Starting PhpStorm URL handler installation"
-    
+
     if prompt_user "yes_no" "Would you like to install PhpStorm URL handler?"; then
         (
             sudo apt -y install desktop-file-utils
@@ -449,7 +449,7 @@ function install_phpstorm_url_handler() {
 
 function install_aws_cli() {
     log "INFO" "Starting AWS CLI v2 installation"
-    
+
     if prompt_user "yes_no" "Would you like to install AWS CLI v2?"; then
         (
             curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
@@ -465,7 +465,7 @@ function install_aws_cli() {
 
 function install_k8s_lens_desktop() {
     log "INFO" "Starting K8s Lens Desktop installation"
-    
+
     if prompt_user "yes_no" "Would you like to install K8s Lens Desktop?"; then
         (
             curl -fsSL https://downloads.k8slens.dev/keys/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/lens-archive-keyring.gpg > /dev/null
@@ -480,7 +480,7 @@ function install_k8s_lens_desktop() {
 
 function install_zoom() {
     log "INFO" "Starting Zoom installation"
-    
+
     if prompt_user "yes_no" "Would you like to install Zoom?"; then
         (
             wget -q https://zoom.us/client/latest/zoom_amd64.deb
@@ -495,7 +495,7 @@ function install_zoom() {
 
 function install_brave() {
     log "INFO" "Starting Brave browser installation"
-    
+
     if prompt_user "yes_no" "Would you like to install Brave browser?"; then
         (
             sudo curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
@@ -510,7 +510,7 @@ function install_brave() {
 
 function install_ledger_live() {
     log "INFO" "Starting Ledger Live installation"
-    
+
     if prompt_user "yes_no" "Would you like to install Ledger Live?"; then
         (
             wget https://download.live.ledger.com/latest/linux -q -O ~/bin/ledger-live-desktop.AppImage
@@ -527,7 +527,7 @@ function install_ledger_live() {
 
 function install_ledger_udev_rules() {
     log "INFO" "Starting Ledger udev rules installation"
-    
+
     if prompt_user "yes_no" "Would you like to install Ledger udev rules?"; then
         (
             wget -q -O - https://raw.githubusercontent.com/LedgerHQ/udev-rules/master/add_udev_rules.sh | sudo bash
@@ -540,7 +540,7 @@ function install_ledger_udev_rules() {
 
 function install_discord() {
     log "INFO" "Starting Discord installation"
-    
+
     if prompt_user "yes_no" "Would you like to install Discord?"; then
         (
             wget -q "https://discord.com/api/download?platform=linux&format=deb" -O _discord.deb
@@ -555,18 +555,18 @@ function install_discord() {
 
 function install_cursor_ide() {
     log "INFO" "Starting Cursor IDE installation"
-    
+
     if prompt_user "yes_no" "Would you like to install Cursor IDE?\nRead https://cursor.sh/ for details."; then
         (
             # Download the latest .deb package
             wget -q "https://download.cursor.sh/linux/appImage/x64/Cursor-latest.deb" -O _cursor.deb
-            
+
             # Install the package
             sudo dpkg -i _cursor.deb || sudo apt -yf install
-            
+
             # Cleanup
             rm _cursor.deb
-            
+
         ) & show_progress $! "Installing Cursor IDE"
         log "INFO" "Cursor IDE installed successfully"
     else
@@ -576,10 +576,10 @@ function install_cursor_ide() {
 
 function install_vscode() {
     log "INFO" "Starting VS Code installation"
-    
+
     if prompt_user "yes_no" "Would you like to install Visual Studio Code?"; then
         (
-            sudo apt-get install wget gpg
+            sudo apt -y install wget gpg
             wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
             sudo install -D -o root -g root -m 644 packages.microsoft.gpg /usr/share/keyrings/packages.microsoft.gpg
             sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
@@ -594,7 +594,7 @@ function install_vscode() {
 
 function install_cloud_tools() {
     log "INFO" "Starting cloud tools installation"
-    
+
     if prompt_user "yes_no" "Would you like to install cloud tools (kubectl, helm, k9s)?"; then
         (
             # Install kubectl
@@ -616,31 +616,31 @@ function install_cloud_tools() {
 
 function install_dnscrypt_proxy() {
     log "INFO" "Starting DNSCrypt-proxy installation"
-    
+
     if prompt_user "yes_no" "Would you like to install DNSCrypt-proxy?"; then
         (
             # Create installation directory
             local install_dir="${HOME}/bin/dnscrypt-proxy"
             mkdir -p "${install_dir}"
-            
+
             # Get latest version and download
             local version
             version=$(curl --silent 'https://api.github.com/repos/DNSCrypt/dnscrypt-proxy/releases/latest' | jq '.tag_name' -r)
-            
+
             log "INFO" "Installing DNSCrypt-proxy version ${version}"
             curl -L "https://github.com/DNSCrypt/dnscrypt-proxy/releases/download/${version}/dnscrypt-proxy-linux_x86_64-${version}.tar.gz" | \
                 tar -zxv --strip-components=1 -C "${install_dir}"
-            
+
             # Configure DNSCrypt
             cp "${install_dir}/example-dnscrypt-proxy.toml" "${install_dir}/dnscrypt-proxy.toml"
-            
+
             # Update configuration
             sed -i 's/# server_names = \[.+\]/server_names = \["cloudflare", "cloudflare-ipv6"\]/' "${install_dir}/dnscrypt-proxy.toml"
             sed -i 's/listen_addresses = \[.+\]/listen_addresses = \["127.0.0.1:53", "[::1]:53"\]/' "${install_dir}/dnscrypt-proxy.toml"
-            
+
             # Configure NetworkManager
             printf "[main]\ndns=none\n" | sudo tee /etc/NetworkManager/conf.d/99-dnscrypt.conf
-            
+
             # Create systemd service
             sudo tee /etc/systemd/system/dnscrypt-proxy.service > /dev/null << EOF
 [Unit]
@@ -661,44 +661,44 @@ User=${USER}
 [Install]
 WantedBy=multi-user.target
 EOF
-            
+
             # Disable and stop systemd-resolved
             if systemctl is-active systemd-resolved >/dev/null 2>&1; then
                 sudo systemctl stop systemd-resolved
                 sudo systemctl disable systemd-resolved
             fi
-            
+
             # Remove resolvconf if installed
             if dpkg -l | grep -q resolvconf; then
                 sudo apt -y remove resolvconf
             fi
-            
+
             # Backup and configure resolv.conf
             if [[ -L /etc/resolv.conf ]]; then
                 sudo rm /etc/resolv.conf
             else
                 sudo cp /etc/resolv.conf /etc/resolv.conf.backup
             fi
-            
+
             printf "nameserver 127.0.0.1\noptions edns0\n" | sudo tee /etc/resolv.conf
-            
+
             # Start DNSCrypt service
             sudo systemctl daemon-reload
             sudo systemctl enable dnscrypt-proxy
             sudo systemctl start dnscrypt-proxy
-            
+
             # Restart NetworkManager
             sudo systemctl restart NetworkManager
-            
+
         ) & show_progress $! "Installing and configuring DNSCrypt-proxy"
-        
+
         log "INFO" "DNSCrypt-proxy installation completed"
         printf "\n System changes made:\n"
         printf "   - DNSCrypt-proxy installed to %s\n" "${HOME}/bin/dnscrypt-proxy"
         printf "   - systemd-resolved disabled\n"
         printf "   - DNSCrypt-proxy service created and enabled\n"
         printf "   - DNS configuration updated to use DNSCrypt-proxy\n"
-        
+
         if prompt_user "yes_no" "Would you like to test DNS resolution?"; then
             dig +short google.com
             printf "\nDNS servers in use:\n"
@@ -706,5 +706,30 @@ EOF
         fi
     else
         log "INFO" "DNSCrypt-proxy installation skipped"
+    fi
+}
+
+function install_anydesk() {
+    log "INFO" "Starting AnyDesk installation"
+
+    if prompt_user "yes_no" "Would you like to install AnyDesk?"; then
+        (
+            # Add the AnyDesk GPG key
+            sudo apt update
+            sudo apt -y install ca-certificates curl
+            sudo install -m 0755 -d /etc/apt/keyrings
+            sudo curl -fsSL https://keys.anydesk.com/repos/DEB-GPG-KEY -o /etc/apt/keyrings/keys.anydesk.com.asc
+            sudo chmod a+r /etc/apt/keyrings/keys.anydesk.com.asc
+
+            # Add the AnyDesk apt repository
+            echo "deb [signed-by=/etc/apt/keyrings/keys.anydesk.com.asc] http://deb.anydesk.com all main" | sudo tee /etc/apt/sources.list.d/anydesk-stable.list > /dev/null
+
+            # Update apt caches and install the AnyDesk client
+            sudo apt update
+            sudo apt -y install anydesk
+        ) & show_progress $! "Installing AnyDesk"
+        log "INFO" "AnyDesk installed successfully"
+    else
+        log "INFO" "AnyDesk installation skipped"
     fi
 }
