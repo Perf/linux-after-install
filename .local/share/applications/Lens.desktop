@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Lens
+Exec=~/bin/lens-desktop.AppImage --no-sandbox %u
+Type=Application
+Icon=lens
+StartupWMClass=Lens
+Categories=Network;
+Terminal=false
+MimeType=x-scheme-handler/lens;

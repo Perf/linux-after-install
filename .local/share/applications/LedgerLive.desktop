@@ -1,7 +1,6 @@
 [Desktop Entry]
-Version=1.0
 Name=Ledger Live
-Exec=~/bin/ledger-live-desktop.AppImage %u
+Exec=~/bin/ledger-live-desktop.AppImage --no-sandbox %u
 Type=Application
 Categories=Finance;
 Terminal=false

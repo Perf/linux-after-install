@@ -34,9 +34,9 @@ install_google_chrome
 
 install_microsoft_edge
 
-install_skype
+#install_skype
 
-install_signal
+#install_signal
 
 install_zoom
 

@@ -18,7 +18,7 @@ function show_progress() {
     local spin='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
     local i=0
 
-    while kill -0 $pid 2>/dev/null; do
+    while kill -0 "$pid" 2>/dev/null; do
         i=$(( (i+1) % ${#spin} ))
         printf "\r[%s] %s..." "${spin:$i:1}" "$message"
         sleep 0.1
@@ -50,7 +50,7 @@ function prompt_user() {
             done
             printf "Choose [1-%d]: " "${#choices[@]}"
             read -r selection
-            echo "$selection"
+            printf "%s" "$selection"
             ;;
         "input")
             if [[ -n "$default" ]]; then
@@ -60,7 +60,7 @@ function prompt_user() {
             fi
             read -r input
             REPLY="${input:-$default}"
-            echo "$REPLY"
+            printf "%s" "$REPLY"
             ;;
     esac
 }
@@ -81,7 +81,7 @@ function set_hostname() {
     # Get new hostname from user
     prompt_user "input" "Enter new hostname" "$old_hostname"
     local new_hostname
-    new_hostname=$REPLY
+    new_hostname="$REPLY"
 
     if [[ ! "$new_hostname" =~ ^[a-zA-Z0-9-]+$ ]]; then
         log "ERROR" "Invalid hostname format. Hostname can only contain letters, numbers, and hyphens."
@@ -210,25 +210,25 @@ EOF
 
 function set_swappiness() {
     local new_swappiness=10
-    local old_swappiness=$(cat /proc/sys/vm/swappiness)
+    local old_swappiness
+    old_swappiness=$(cat /proc/sys/vm/swappiness)
 
     log "INFO" "Starting swappiness configuration"
 
     local message="Configure system swappiness?\nCurrent: $old_swappiness\nRecommended: $new_swappiness"
     local options="Use recommended ($new_swappiness),Keep current ($old_swappiness),Enter custom value"
     prompt_user "choice" "$message" "" "$options"
-    local choice=$REPLY
+    local choice="$REPLY"
 
     case $choice in
         1) # Use recommended
-            new_swappiness=10
             ;;
         2) # Keep current
-            new_swappiness=$old_swappiness
+            new_swappiness="$old_swappiness"
             ;;
         3) # Custom value
             prompt_user "input" "Enter custom swappiness value" "$old_swappiness"
-            new_swappiness=$REPLY
+            new_swappiness="$REPLY"
             ;;
     esac
 
@@ -344,7 +344,7 @@ function install_jetbrains_toolbox() {
             local JBT_VERSION
             JBT_VERSION=$(curl --silent 'https://data.services.jetbrains.com/products/releases?code=TBA&latest=true&type=release' | jq '.TBA[0].build' -r)
             curl -L "https://download.jetbrains.com/toolbox/jetbrains-toolbox-${JBT_VERSION}.tar.gz" | tar -zxv --strip-components=1 -C ~/bin
-            echo 'fs.inotify.max_user_watches = 524288' | sudo tee /etc/sysctl.d/jetbrains.conf
+            printf 'fs.inotify.max_user_watches = 524288' | sudo tee /etc/sysctl.d/jetbrains.conf
             sudo sysctl -p --system
         ) & show_progress $! "Installing Jetbrains Toolbox"
         log "INFO" "Jetbrains Toolbox installed successfully"
@@ -358,12 +358,21 @@ function install_docker_and_docker_compose() {
 
     if prompt_user "yes_no" "Would you like to install Docker and Docker Compose?"; then
         (
-            sudo apt -y install ca-certificates curl gnupg lsb-release
-            sudo mkdir -p /etc/apt/keyrings
-            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt remove $pkg; done
+            # Add Docker's official GPG key:
             sudo apt update
-            sudo apt -y install docker.io docker-compose-plugin docker-buildx-plugin
+            sudo apt -y install ca-certificates curl
+            sudo install -m 0755 -d /etc/apt/keyrings
+            sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+            sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+            # Add the repository to Apt sources:
+            echo \
+              "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+              $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+              sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            sudo apt update
+            sudo apt -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
             sudo usermod -a -G docker "${USER}"
         ) & show_progress $! "Installing Docker and Docker Compose"
         log "INFO" "Docker and Docker Compose installed successfully"
@@ -468,9 +477,12 @@ function install_k8s_lens_desktop() {
 
     if prompt_user "yes_no" "Would you like to install K8s Lens Desktop?"; then
         (
-            curl -fsSL https://downloads.k8slens.dev/keys/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/lens-archive-keyring.gpg > /dev/null
-            echo "deb [arch=amd64 signed-by=/usr/share/keyrings/lens-archive-keyring.gpg] https://downloads.k8slens.dev/apt/debian stable main" | sudo tee /etc/apt/sources.list.d/lens.list > /dev/null
-            sudo apt update && sudo apt install lens
+            wget https://api.k8slens.dev/binaries/latest.x86_64.AppImage -q -O ~/bin/lens-desktop.AppImage
+            chmod +x ~/bin/lens-desktop.AppImage
+            cp .local/share/applications/Lens.desktop ~/.local/share/applications/Lens.desktop
+            update-desktop-database ~/.local/share/applications
+            xdg-mime default Lens.desktop x-scheme-handler/lens
+            xdg-settings set default-url-scheme-handler lens Lens.desktop
         ) & show_progress $! "Installing K8s Lens Desktop"
         log "INFO" "K8s Lens Desktop installed successfully (executable: lens-desktop)"
     else
@@ -499,7 +511,7 @@ function install_brave() {
     if prompt_user "yes_no" "Would you like to install Brave browser?"; then
         (
             sudo curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
-            echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main" | sudo tee /etc/apt/sources.list.d/brave-browser-release.list > /dev/null
+            printf "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main" | sudo tee /etc/apt/sources.list.d/brave-browser-release.list > /dev/null
             sudo apt -y update && sudo apt -y install brave-browser
         ) & show_progress $! "Installing Brave browser"
         log "INFO" "Brave browser installed successfully"
@@ -515,9 +527,9 @@ function install_ledger_live() {
         (
             wget https://download.live.ledger.com/latest/linux -q -O ~/bin/ledger-live-desktop.AppImage
             chmod +x ~/bin/ledger-live-desktop.AppImage
-            cp .local/share/applications/ledgerlive.desktop ~/.local/share/applications/ledgerlive.desktop
+            cp .local/share/applications/LedgerLive.desktop ~/.local/share/applications/LedgerLive.desktop
             update-desktop-database ~/.local/share/applications
-            xdg-mime default ledgerlive.desktop x-scheme-handler/ledgerlive
+            xdg-mime default LedgerLive.desktop x-scheme-handler/ledgerlive
         ) & show_progress $! "Installing Ledger Live"
         log "INFO" "Ledger Live installed successfully"
     else
@@ -722,7 +734,7 @@ function install_anydesk() {
             sudo chmod a+r /etc/apt/keyrings/keys.anydesk.com.asc
 
             # Add the AnyDesk apt repository
-            echo "deb [signed-by=/etc/apt/keyrings/keys.anydesk.com.asc] http://deb.anydesk.com all main" | sudo tee /etc/apt/sources.list.d/anydesk-stable.list > /dev/null
+            printf "deb [signed-by=/etc/apt/keyrings/keys.anydesk.com.asc] http://deb.anydesk.com all main" | sudo tee /etc/apt/sources.list.d/anydesk-stable.list > /dev/null
 
             # Update apt caches and install the AnyDesk client
             sudo apt update
