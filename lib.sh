@@ -720,3 +720,16 @@ function install_anydesk() {
         log "INFO" "AnyDesk installation skipped"
     fi
 }
+
+function install_transgui() {
+    log "INFO" "Starting Transmission Remote GUI installation"
+
+    if prompt_user "yes_no" "Would you like to install Transmission Remote GUI?"; then
+        (
+            sudo apt -y install transgui > /dev/null 2>&1
+        ) & show_progress $! "Installing Transmission Remote GUI"
+        log "INFO" "Transmission Remote GUI installed successfully"
+    else
+        log "INFO" "Transmission Remote GUI installation skipped"
+    fi
+}

@@ -2,6 +2,8 @@
 
 set -eu
 
+sudo echo ""
+
 source ./lib.sh
 
 remove_snapd
@@ -15,8 +17,8 @@ add_oibaf_repo
 add_kubuntu_backports_repo
 
 # perform full update/upgrade
-sudo apt -y update
-sudo apt -y full-upgrade
+sudo apt -y update > /dev/null 2>&1
+sudo apt -y full-upgrade > /dev/null 2>&1
 
 # install packages
 sudo apt -y install \
@@ -28,7 +30,7 @@ sudo apt -y install \
     curl \
     inxi \
     apt-transport-https \
-    fwupd-signed
+    fwupd-signed > /dev/null 2>&1
 
 install_google_chrome
 
@@ -40,10 +42,12 @@ install_discord
 
 install_anydesk
 
+install_transgui
+
 # apt cleanup
-sudo apt -y autoclean
-sudo apt -y autoremove
+sudo apt -y autoclean > /dev/null 2>&1
+sudo apt -y autoremove > /dev/null 2>&1
 
 # disable KDE Baloo indexer
-balooctl disable
-balooctl purge
+balooctl disable > /dev/null 2>&1
+balooctl purge > /dev/null 2>&1

@@ -55,6 +55,7 @@ declare -a APPS=(
     "Discord:discord:$HOME/.config/discord"
     "Studio 3T:studio3t:$HOME/.3T"
     "Transmission:transgui:$HOME/.config/Transmission Remote GUI"
+    "Ledger Live:ledger-live:$HOME/.config/Ledger Live"
 )
 
 # Define standalone config files and directories
