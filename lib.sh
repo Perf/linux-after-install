@@ -728,13 +728,13 @@ function install_anydesk() {
         (
             # Add the AnyDesk GPG key
             sudo apt update
-            sudo apt -y install ca-certificates curl
+            sudo apt -y install ca-certificates wget
             sudo install -m 0755 -d /etc/apt/keyrings
-            sudo curl -fsSL https://keys.anydesk.com/repos/DEB-GPG-KEY -o /etc/apt/keyrings/keys.anydesk.com.asc
+            wget -qO - https://keys.anydesk.com/repos/DEB-GPG-KEY | sudo gpg --dearmor -o /etc/apt/keyrings/anydesk.gpg
             sudo chmod a+r /etc/apt/keyrings/keys.anydesk.com.asc
 
             # Add the AnyDesk apt repository
-            printf "deb [signed-by=/etc/apt/keyrings/keys.anydesk.com.asc] http://deb.anydesk.com all main" | sudo tee /etc/apt/sources.list.d/anydesk-stable.list > /dev/null
+            printf "deb [signed-by=/etc/apt/keyrings/anydesk.gpg] http://deb.anydesk.com/ all main" | sudo tee /etc/apt/sources.list.d/anydesk.list
 
             # Update apt caches and install the AnyDesk client
             sudo apt update
