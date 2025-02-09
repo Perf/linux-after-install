@@ -34,10 +34,6 @@ install_google_chrome
 
 install_microsoft_edge
 
-#install_skype
-
-#install_signal
-
 install_zoom
 
 install_discord

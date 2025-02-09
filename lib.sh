@@ -69,7 +69,7 @@ function prompt_user() {
 
 function set_hostname() {
     local old_hostname
-    old_hostname=$(hostname)
+    old_hostname=$(hostname 2>/dev/null)
 
     log "INFO" "Starting hostname configuration"
 
@@ -99,11 +99,11 @@ function set_hostname() {
 
     if prompt_user "yes_no" "Apply these changes?"; then
         (
-            sudo hostnamectl set-hostname "$new_hostname" &&
-            sudo sed -i "s/127\.0\.1\.1\s.*/127.0.1.1\t${new_hostname}/" /etc/hosts
+            sudo hostnamectl set-hostname "$new_hostname" > /dev/null 2>&1 &&
+            sudo sed -i "s/127\.0\.1\.1\s.*/127.0.1.1\t${new_hostname}/" /etc/hosts > /dev/null 2>&1
         ) & show_progress $! "Updating hostname"
 
-        if [[ "$(hostname)" == "$new_hostname" ]]; then
+        if [[ "$(hostname 2>/dev/null)" == "$new_hostname" ]]; then
             log "INFO" "Hostname successfully changed to '$new_hostname'"
             return 0
         else
@@ -137,27 +137,27 @@ function remove_snapd() {
 
     (
         log "INFO" "Stopping snapd services"
-        sudo systemctl stop snapd.service snapd.socket snapd.seeded.service
+        sudo systemctl stop snapd.service snapd.socket snapd.seeded.service > /dev/null 2>&1
 
         log "INFO" "Removing snap packages"
         for snap in $(snap list 2>/dev/null | awk 'NR>1 {print $1}'); do
             log "INFO" "Removing snap package: $snap"
-            sudo snap remove --purge "$snap"
+            sudo snap remove --purge "$snap" > /dev/null 2>&1
         done
 
         # Wait for snap processes
-        while pgrep -a snap >/dev/null; do
+        while pgrep -a snap >/dev/null 2>&1; do
             sleep 1
         done
 
         log "INFO" "Unmounting snap volumes"
-        for mnt in $(mount | grep snapd | cut -d' ' -f3); do
-            sudo umount -l "$mnt" || true
+        for mnt in $(mount | grep snapd | cut -d' ' -f3 2>/dev/null); do
+            sudo umount -l "$mnt" > /dev/null 2>&1 || true
         done
 
         log "INFO" "Removing snapd package and configuration"
-        sudo apt -y remove --purge snapd
-        sudo apt -y autoremove --purge
+        sudo apt -y remove --purge snapd > /dev/null 2>&1
+        sudo apt -y autoremove --purge > /dev/null 2>&1
 
         log "INFO" "Removing snap directories and cache"
         sudo rm -rf \
@@ -165,14 +165,14 @@ function remove_snapd() {
             /var/lib/snapd/ \
             /var/snap/ \
             /snap/ \
-            ~/snap/
+            ~/snap/ > /dev/null 2>&1
 
         log "INFO" "Removing remaining configuration"
         sudo rm -rf \
             /etc/snap/ \
             /usr/lib/snapd/ \
             /usr/share/snapd/ \
-            /usr/share/keyrings/snapd.gpg
+            /usr/share/keyrings/snapd.gpg > /dev/null 2>&1
 
         log "INFO" "Configuring system to prevent snapd reinstallation"
         sudo tee /etc/apt/preferences.d/nosnap.pref > /dev/null <<'EOF'
@@ -182,16 +182,16 @@ Pin-Priority: -1
 EOF
 
         # Handle Firefox replacement if needed
-        if ! command -v firefox >/dev/null && prompt_user "yes_no" "Would you like to re-install Firefox from Mozilla PPA?"; then
+        if ! command -v firefox >/dev/null 2>&1 && prompt_user "yes_no" "Would you like to re-install Firefox from Mozilla PPA?"; then
             log "INFO" "Installing Firefox from Mozilla PPA"
-            sudo add-apt-repository -y ppa:mozillateam/ppa
+            sudo add-apt-repository -y ppa:mozillateam/ppa > /dev/null 2>&1
             sudo tee /etc/apt/preferences.d/mozilla-firefox > /dev/null <<'EOF'
 Package: *
 Pin: release o=LP-PPA-mozillateam
 Pin-Priority: 1001
 EOF
-            sudo apt update
-            sudo apt install -y firefox
+            sudo apt update > /dev/null 2>&1
+            sudo apt install -y firefox > /dev/null 2>&1
         fi
 
     ) & show_progress $! "Removing snapd and related components"
@@ -203,7 +203,7 @@ EOF
     printf "   - Snapd package and configuration removed\n"
     printf "   - Snap directories cleaned up\n"
     printf "   - System configured to prevent snapd reinstallation\n"
-    if command -v firefox >/dev/null; then
+    if command -v firefox >/dev/null 2>&1; then
         printf "   - Firefox installed from Mozilla PPA\n"
     fi
 }
@@ -211,7 +211,7 @@ EOF
 function set_swappiness() {
     local new_swappiness=10
     local old_swappiness
-    old_swappiness=$(cat /proc/sys/vm/swappiness)
+    old_swappiness=$(cat /proc/sys/vm/swappiness 2>/dev/null)
 
     log "INFO" "Starting swappiness configuration"
 
@@ -234,8 +234,8 @@ function set_swappiness() {
 
     if [[ "$new_swappiness" != "$old_swappiness" ]]; then
         (
-            printf "vm.swappiness = %d" "$new_swappiness" | sudo tee /etc/sysctl.d/swapiness.conf
-            sudo sysctl -p --system
+            printf "vm.swappiness = %d" "$new_swappiness" | sudo tee /etc/sysctl.d/swapiness.conf > /dev/null
+            sudo sysctl -p --system > /dev/null 2>&1
         ) & show_progress $! "Updating swappiness"
         log "INFO" "Swappiness updated to $new_swappiness"
     else
@@ -250,7 +250,7 @@ function add_oibaf_repo() {
 
     if prompt_user "yes_no" "$message"; then
         (
-            sudo add-apt-repository -y ppa:oibaf/graphics-drivers
+            sudo add-apt-repository -y ppa:oibaf/graphics-drivers > /dev/null 2>&1
         ) & show_progress $! "Adding Oibaf repository"
         log "INFO" "Oibaf repository added successfully"
     else
@@ -265,7 +265,7 @@ function add_kubuntu_backports_repo() {
 
     if prompt_user "yes_no" "$message"; then
         (
-            sudo add-apt-repository -y ppa:kubuntu-ppa/backports
+            sudo add-apt-repository -y ppa:kubuntu-ppa/backports > /dev/null 2>&1
         ) & show_progress $! "Adding Kubuntu Backports repository"
         log "INFO" "Kubuntu Backports repository added successfully"
     else
@@ -278,9 +278,9 @@ function install_google_chrome() {
 
     if prompt_user "yes_no" "Would you like to install Google Chrome?"; then
         (
-            wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -O _google_chrome.deb
-            sudo dpkg -i _google_chrome.deb || sudo apt -yf install
-            rm _google_chrome.deb
+            wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -O _google_chrome.deb 2>/dev/null
+            sudo dpkg -i _google_chrome.deb > /dev/null 2>&1 || sudo apt -yf install > /dev/null 2>&1
+            rm _google_chrome.deb > /dev/null 2>&1
         ) & show_progress $! "Installing Google Chrome"
         log "INFO" "Google Chrome installed successfully"
     else
@@ -293,11 +293,11 @@ function install_microsoft_edge() {
 
     if prompt_user "yes_no" "Would you like to install Microsoft Edge?"; then
         (
-            curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
-            sudo install -o root -g root -m 644 microsoft.gpg /etc/apt/trusted.gpg.d/
-            sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/edge stable main" > /etc/apt/sources.list.d/microsoft-edge.list'
-            sudo rm microsoft.gpg
-            sudo apt -y update && sudo apt -y install microsoft-edge-stable
+            curl -s https://packages.microsoft.com/keys/microsoft.asc 2>/dev/null | gpg --dearmor > microsoft.gpg 2>/dev/null
+            sudo install -o root -g root -m 644 microsoft.gpg /etc/apt/trusted.gpg.d/ > /dev/null 2>&1
+            sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/edge stable main" > /etc/apt/sources.list.d/microsoft-edge.list' 2>/dev/null
+            sudo rm microsoft.gpg > /dev/null 2>&1
+            sudo apt -y update > /dev/null 2>&1 && sudo apt -y install microsoft-edge-stable > /dev/null 2>&1
         ) & show_progress $! "Installing Microsoft Edge"
         log "INFO" "Microsoft Edge installed successfully"
     else
@@ -305,47 +305,16 @@ function install_microsoft_edge() {
     fi
 }
 
-# function install_skype() {
-#     log "INFO" "Starting Skype installation"
-
-#     if prompt_user "yes_no" "Would you like to install Skype?"; then
-#         (
-#             wget -q https://go.skype.com/skypeforlinux-64.deb
-#             sudo dpkg -i skypeforlinux-64.deb || sudo apt -yf install
-#             rm skypeforlinux-64.deb
-#         ) & show_progress $! "Installing Skype"
-#         log "INFO" "Skype installed successfully"
-#     else
-#         log "INFO" "Skype installation skipped"
-#     fi
-# }
-
-# function install_signal() {
-#     log "INFO" "Starting Signal installation"
-
-#     if prompt_user "yes_no" "Would you like to install Signal?"; then
-#         (
-#             wget -O- https://updates.signal.org/desktop/apt/keys.asc | gpg --dearmor > signal-desktop-keyring.gpg
-#             cat signal-desktop-keyring.gpg | sudo tee -a /usr/share/keyrings/signal-desktop-keyring.gpg > /dev/null
-#             printf 'deb [arch=amd64 signed-by=/usr/share/keyrings/signal-desktop-keyring.gpg] https://updates.signal.org/desktop/apt xenial main' | sudo tee -a /etc/apt/sources.list.d/signal-xenial.list
-#             sudo apt -y update && sudo apt -y install signal-desktop
-#         ) & show_progress $! "Installing Signal"
-#         log "INFO" "Signal installed successfully"
-#     else
-#         log "INFO" "Signal installation skipped"
-#     fi
-# }
-
 function install_jetbrains_toolbox() {
     log "INFO" "Starting Jetbrains Toolbox installation"
 
     if prompt_user "yes_no" "Would you like to install Jetbrains Toolbox?"; then
         (
             local JBT_VERSION
-            JBT_VERSION=$(curl --silent 'https://data.services.jetbrains.com/products/releases?code=TBA&latest=true&type=release' | jq '.TBA[0].build' -r)
-            curl -L "https://download.jetbrains.com/toolbox/jetbrains-toolbox-${JBT_VERSION}.tar.gz" | tar -zxv --strip-components=1 -C ~/bin
-            printf 'fs.inotify.max_user_watches = 524288' | sudo tee /etc/sysctl.d/jetbrains.conf
-            sudo sysctl -p --system
+            JBT_VERSION=$(curl --silent 'https://data.services.jetbrains.com/products/releases?code=TBA&latest=true&type=release' 2>/dev/null | jq '.TBA[0].build' -r 2>/dev/null)
+            curl -sL "https://download.jetbrains.com/toolbox/jetbrains-toolbox-${JBT_VERSION}.tar.gz" 2>/dev/null | tar -zx --strip-components=1 -C ~/bin > /dev/null 2>&1
+            printf 'fs.inotify.max_user_watches = 524288' | sudo tee /etc/sysctl.d/jetbrains.conf > /dev/null
+            sudo sysctl -p --system > /dev/null 2>&1
         ) & show_progress $! "Installing Jetbrains Toolbox"
         log "INFO" "Jetbrains Toolbox installed successfully"
     else
@@ -358,22 +327,26 @@ function install_docker_and_docker_compose() {
 
     if prompt_user "yes_no" "Would you like to install Docker and Docker Compose?"; then
         (
-            for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do sudo apt remove $pkg; done
+            for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do
+                sudo apt remove -y $pkg > /dev/null 2>&1 || true
+            done
+
             # Add Docker's official GPG key:
-            sudo apt update
-            sudo apt -y install ca-certificates curl
-            sudo install -m 0755 -d /etc/apt/keyrings
-            sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-            sudo chmod a+r /etc/apt/keyrings/docker.asc
+            sudo apt update > /dev/null 2>&1
+            sudo apt -y install ca-certificates curl > /dev/null 2>&1
+            sudo install -m 0755 -d /etc/apt/keyrings > /dev/null 2>&1
+            sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc 2>/dev/null
+            sudo chmod a+r /etc/apt/keyrings/docker.asc > /dev/null 2>&1
 
             # Add the repository to Apt sources:
             echo \
-              "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+              "deb [arch=$(dpkg --print-architecture 2>/dev/null) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
               $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
               sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-            sudo apt update
-            sudo apt -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-            sudo usermod -a -G docker "${USER}"
+
+            sudo apt update > /dev/null 2>&1
+            sudo apt -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin > /dev/null 2>&1
+            sudo usermod -a -G docker "${USER}" > /dev/null 2>&1
         ) & show_progress $! "Installing Docker and Docker Compose"
         log "INFO" "Docker and Docker Compose installed successfully"
         log "INFO" "Please log out and back in for Docker group changes to take effect"
@@ -387,7 +360,7 @@ function install_podman_cli_and_desktop() {
 
     if prompt_user "yes_no" "Would you like to install Podman CLI?"; then
         (
-            sudo apt -y install podman
+            sudo apt -y install podman > /dev/null 2>&1
         ) & show_progress $! "Installing Podman CLI"
         log "INFO" "Podman CLI installed successfully"
     else
@@ -396,8 +369,8 @@ function install_podman_cli_and_desktop() {
 
     if prompt_user "yes_no" "Would you like to install Podman Desktop (using Flatpak)?"; then
         (
-            sudo apt -y install flatpak
-            flatpak install flathub io.podman_desktop.PodmanDesktop
+            sudo apt -y install flatpak > /dev/null 2>&1
+            flatpak install -y --noninteractive flathub io.podman_desktop.PodmanDesktop > /dev/null 2>&1
         ) & show_progress $! "Installing Podman Desktop"
         log "INFO" "Podman Desktop installed successfully"
     else
@@ -413,9 +386,9 @@ function install_ctop() {
     if prompt_user "yes_no" "$message"; then
         (
             local CTOP_VERSION
-            CTOP_VERSION=$(curl --silent 'https://api.github.com/repos/bcicen/ctop/releases/latest' | jq '.tag_name' -r)
-            sudo curl -L "https://github.com/bcicen/ctop/releases/download/${CTOP_VERSION}/ctop-${CTOP_VERSION:1}-linux-amd64" -o /usr/local/bin/ctop
-            sudo chmod +x /usr/local/bin/ctop
+            CTOP_VERSION=$(curl --silent 'https://api.github.com/repos/bcicen/ctop/releases/latest' 2>/dev/null | jq '.tag_name' -r 2>/dev/null)
+            sudo curl -sL "https://github.com/bcicen/ctop/releases/download/${CTOP_VERSION}/ctop-${CTOP_VERSION:1}-linux-amd64" -o /usr/local/bin/ctop 2>/dev/null
+            sudo chmod +x /usr/local/bin/ctop > /dev/null 2>&1
         ) & show_progress $! "Installing ctop"
         log "INFO" "ctop installed successfully"
     else
@@ -429,10 +402,10 @@ function install_slack() {
     if prompt_user "yes_no" "Would you like to install Slack?"; then
         (
             local SLACK_VERSION
-            SLACK_VERSION=$(curl -silent "https://slack.com/release-notes/linux" | grep -m 1 -o -E "<h2>Slack [0-9]+\.[0-9]+\.[0-9]+" | grep -m 1 -o -E "[0-9]+\.[0-9]+\.[0-9]+")
-            wget -q "https://downloads.slack-edge.com/desktop-releases/linux/x64/${SLACK_VERSION}/slack-desktop-${SLACK_VERSION}-amd64.deb" -O _slack.deb
-            sudo dpkg -i _slack.deb || sudo apt -yf install
-            rm _slack.deb
+            SLACK_VERSION=$(curl -s "https://slack.com/release-notes/linux" 2>/dev/null | grep -m 1 -o -E "<h2>Slack [0-9]+\.[0-9]+\.[0-9]+" 2>/dev/null | grep -m 1 -o -E "[0-9]+\.[0-9]+\.[0-9]+" 2>/dev/null)
+            wget -q "https://downloads.slack-edge.com/desktop-releases/linux/x64/${SLACK_VERSION}/slack-desktop-${SLACK_VERSION}-amd64.deb" -O _slack.deb 2>/dev/null
+            sudo dpkg -i _slack.deb > /dev/null 2>&1 || sudo apt -yf install > /dev/null 2>&1
+            rm _slack.deb > /dev/null 2>&1
         ) & show_progress $! "Installing Slack"
         log "INFO" "Slack installed successfully"
     else
@@ -445,10 +418,10 @@ function install_phpstorm_url_handler() {
 
     if prompt_user "yes_no" "Would you like to install PhpStorm URL handler?"; then
         (
-            sudo apt -y install desktop-file-utils
-            cp bin/phpstorm-url-handler ~/bin
-            chmod +x ~/bin/phpstorm-url-handler
-            sudo desktop-file-install --rebuild-mime-info-cache bin/phpstorm-url-handler.desktop
+            sudo apt -y install desktop-file-utils > /dev/null 2>&1
+            cp bin/phpstorm-url-handler ~/bin > /dev/null 2>&1
+            chmod +x ~/bin/phpstorm-url-handler > /dev/null 2>&1
+            sudo desktop-file-install --rebuild-mime-info-cache bin/phpstorm-url-handler.desktop > /dev/null 2>&1
         ) & show_progress $! "Installing PhpStorm URL handler"
         log "INFO" "PhpStorm URL handler installed successfully"
     else
@@ -461,10 +434,10 @@ function install_aws_cli() {
 
     if prompt_user "yes_no" "Would you like to install AWS CLI v2?"; then
         (
-            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-            unzip awscliv2.zip
-            sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
-            rm -rf ./aws awscliv2.zip
+            curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" 2>/dev/null
+            unzip -q awscliv2.zip > /dev/null 2>&1
+            sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update > /dev/null 2>&1
+            rm -rf ./aws awscliv2.zip > /dev/null 2>&1
         ) & show_progress $! "Installing AWS CLI v2"
         log "INFO" "AWS CLI v2 installed successfully"
     else
@@ -477,12 +450,12 @@ function install_k8s_lens_desktop() {
 
     if prompt_user "yes_no" "Would you like to install K8s Lens Desktop?"; then
         (
-            wget https://api.k8slens.dev/binaries/latest.x86_64.AppImage -q -O ~/bin/lens-desktop.AppImage
-            chmod +x ~/bin/lens-desktop.AppImage
-            cp .local/share/applications/Lens.desktop ~/.local/share/applications/Lens.desktop
-            update-desktop-database ~/.local/share/applications
-            xdg-mime default Lens.desktop x-scheme-handler/lens
-            xdg-settings set default-url-scheme-handler lens Lens.desktop
+            wget https://api.k8slens.dev/binaries/latest.x86_64.AppImage -q -O ~/bin/lens-desktop.AppImage 2>/dev/null
+            chmod +x ~/bin/lens-desktop.AppImage > /dev/null 2>&1
+            cp .local/share/applications/Lens.desktop ~/.local/share/applications/Lens.desktop > /dev/null 2>&1
+            update-desktop-database ~/.local/share/applications > /dev/null 2>&1
+            xdg-mime default Lens.desktop x-scheme-handler/lens > /dev/null 2>&1
+            xdg-settings set default-url-scheme-handler lens Lens.desktop > /dev/null 2>&1
         ) & show_progress $! "Installing K8s Lens Desktop"
         log "INFO" "K8s Lens Desktop installed successfully (executable: lens-desktop)"
     else
@@ -495,9 +468,9 @@ function install_zoom() {
 
     if prompt_user "yes_no" "Would you like to install Zoom?"; then
         (
-            wget -q https://zoom.us/client/latest/zoom_amd64.deb
-            sudo dpkg -i zoom_amd64.deb || sudo apt -yf install
-            rm zoom_amd64.deb
+            wget -q https://zoom.us/client/latest/zoom_amd64.deb 2>/dev/null
+            sudo dpkg -i zoom_amd64.deb > /dev/null 2>&1 || sudo apt -yf install > /dev/null 2>&1
+            rm zoom_amd64.deb > /dev/null 2>&1
         ) & show_progress $! "Installing Zoom"
         log "INFO" "Zoom installed successfully"
     else
@@ -510,9 +483,9 @@ function install_brave() {
 
     if prompt_user "yes_no" "Would you like to install Brave browser?"; then
         (
-            sudo curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
+            sudo curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg 2>/dev/null
             printf "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main" | sudo tee /etc/apt/sources.list.d/brave-browser-release.list > /dev/null
-            sudo apt -y update && sudo apt -y install brave-browser
+            sudo apt -y update > /dev/null 2>&1 && sudo apt -y install brave-browser > /dev/null 2>&1
         ) & show_progress $! "Installing Brave browser"
         log "INFO" "Brave browser installed successfully"
     else
@@ -525,11 +498,11 @@ function install_ledger_live() {
 
     if prompt_user "yes_no" "Would you like to install Ledger Live?"; then
         (
-            wget https://download.live.ledger.com/latest/linux -q -O ~/bin/ledger-live-desktop.AppImage
-            chmod +x ~/bin/ledger-live-desktop.AppImage
-            cp .local/share/applications/LedgerLive.desktop ~/.local/share/applications/LedgerLive.desktop
-            update-desktop-database ~/.local/share/applications
-            xdg-mime default LedgerLive.desktop x-scheme-handler/ledgerlive
+            wget https://download.live.ledger.com/latest/linux -q -O ~/bin/ledger-live-desktop.AppImage 2>/dev/null
+            chmod +x ~/bin/ledger-live-desktop.AppImage > /dev/null 2>&1
+            cp .local/share/applications/LedgerLive.desktop ~/.local/share/applications/LedgerLive.desktop > /dev/null 2>&1
+            update-desktop-database ~/.local/share/applications > /dev/null 2>&1
+            xdg-mime default LedgerLive.desktop x-scheme-handler/ledgerlive > /dev/null 2>&1
         ) & show_progress $! "Installing Ledger Live"
         log "INFO" "Ledger Live installed successfully"
     else
@@ -542,7 +515,7 @@ function install_ledger_udev_rules() {
 
     if prompt_user "yes_no" "Would you like to install Ledger udev rules?"; then
         (
-            wget -q -O - https://raw.githubusercontent.com/LedgerHQ/udev-rules/master/add_udev_rules.sh | sudo bash
+            wget -q -O - https://raw.githubusercontent.com/LedgerHQ/udev-rules/master/add_udev_rules.sh 2>/dev/null | sudo bash > /dev/null 2>&1
         ) & show_progress $! "Installing Ledger udev rules"
         log "INFO" "Ledger udev rules installed successfully"
     else
@@ -555,9 +528,9 @@ function install_discord() {
 
     if prompt_user "yes_no" "Would you like to install Discord?"; then
         (
-            wget -q "https://discord.com/api/download?platform=linux&format=deb" -O _discord.deb
-            sudo dpkg -i _discord.deb || sudo apt -yf install
-            rm _discord.deb
+            wget -q "https://discord.com/api/download?platform=linux&format=deb" -O _discord.deb 2>/dev/null
+            sudo dpkg -i _discord.deb > /dev/null 2>&1 || sudo apt -yf install > /dev/null 2>&1
+            rm _discord.deb > /dev/null 2>&1
         ) & show_progress $! "Installing Discord"
         log "INFO" "Discord installed successfully"
     else
@@ -571,13 +544,13 @@ function install_cursor_ide() {
     if prompt_user "yes_no" "Would you like to install Cursor IDE?\nRead https://cursor.sh/ for details."; then
         (
             # Download the latest .deb package
-            wget -q "https://download.cursor.sh/linux/appImage/x64/Cursor-latest.deb" -O _cursor.deb
+            wget -q "https://download.cursor.sh/linux/appImage/x64/Cursor-latest.deb" -O _cursor.deb 2>/dev/null
 
             # Install the package
-            sudo dpkg -i _cursor.deb || sudo apt -yf install
+            sudo dpkg -i _cursor.deb > /dev/null 2>&1 || sudo apt -yf install > /dev/null 2>&1
 
             # Cleanup
-            rm _cursor.deb
+            rm _cursor.deb > /dev/null 2>&1
 
         ) & show_progress $! "Installing Cursor IDE"
         log "INFO" "Cursor IDE installed successfully"
@@ -591,12 +564,12 @@ function install_vscode() {
 
     if prompt_user "yes_no" "Would you like to install Visual Studio Code?"; then
         (
-            sudo apt -y install wget gpg
-            wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
-            sudo install -D -o root -g root -m 644 packages.microsoft.gpg /usr/share/keyrings/packages.microsoft.gpg
-            sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
-            rm -f packages.microsoft.gpg
-            sudo apt update && sudo apt install -y code
+            sudo apt -y install wget gpg > /dev/null 2>&1
+            wget -qO- https://packages.microsoft.com/keys/microsoft.asc 2>/dev/null | gpg --dearmor > packages.microsoft.gpg 2>/dev/null
+            sudo install -D -o root -g root -m 644 packages.microsoft.gpg /usr/share/keyrings/packages.microsoft.gpg > /dev/null 2>&1
+            sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list' 2>/dev/null
+            rm -f packages.microsoft.gpg > /dev/null 2>&1
+            sudo apt update > /dev/null 2>&1 && sudo apt install -y code > /dev/null 2>&1
         ) & show_progress $! "Installing VS Code"
         log "INFO" "VS Code installed successfully"
     else
@@ -610,15 +583,17 @@ function install_cloud_tools() {
     if prompt_user "yes_no" "Would you like to install cloud tools (kubectl, helm, k9s)?"; then
         (
             # Install kubectl
-            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-            sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-            rm kubectl
+            local kubectl_version
+            kubectl_version=$(curl -L -s https://dl.k8s.io/release/stable.txt 2>/dev/null)
+            curl -LO "https://dl.k8s.io/release/${kubectl_version}/bin/linux/amd64/kubectl" 2>/dev/null
+            sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl > /dev/null 2>&1
+            rm kubectl > /dev/null 2>&1
 
             # Install helm
-            curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+            curl -s https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 2>/dev/null | bash > /dev/null 2>&1
 
             # Install k9s
-            curl -sS https://webinstall.dev/k9s | bash
+            curl -sS https://webinstall.dev/k9s 2>/dev/null | bash > /dev/null 2>&1
         ) & show_progress $! "Installing cloud tools"
         log "INFO" "Cloud tools installed successfully"
     else
@@ -633,25 +608,25 @@ function install_dnscrypt_proxy() {
         (
             # Create installation directory
             local install_dir="${HOME}/bin/dnscrypt-proxy"
-            mkdir -p "${install_dir}"
+            mkdir -p "${install_dir}" > /dev/null 2>&1
 
             # Get latest version and download
             local version
-            version=$(curl --silent 'https://api.github.com/repos/DNSCrypt/dnscrypt-proxy/releases/latest' | jq '.tag_name' -r)
+            version=$(curl --silent 'https://api.github.com/repos/DNSCrypt/dnscrypt-proxy/releases/latest' 2>/dev/null | jq '.tag_name' -r 2>/dev/null)
 
             log "INFO" "Installing DNSCrypt-proxy version ${version}"
-            curl -L "https://github.com/DNSCrypt/dnscrypt-proxy/releases/download/${version}/dnscrypt-proxy-linux_x86_64-${version}.tar.gz" | \
-                tar -zxv --strip-components=1 -C "${install_dir}"
+            curl -sL "https://github.com/DNSCrypt/dnscrypt-proxy/releases/download/${version}/dnscrypt-proxy-linux_x86_64-${version}.tar.gz" 2>/dev/null | \
+                tar -zx --strip-components=1 -C "${install_dir}" > /dev/null 2>&1
 
             # Configure DNSCrypt
-            cp "${install_dir}/example-dnscrypt-proxy.toml" "${install_dir}/dnscrypt-proxy.toml"
+            cp "${install_dir}/example-dnscrypt-proxy.toml" "${install_dir}/dnscrypt-proxy.toml" > /dev/null 2>&1
 
             # Update configuration
-            sed -i 's/# server_names = \[.+\]/server_names = \["cloudflare", "cloudflare-ipv6"\]/' "${install_dir}/dnscrypt-proxy.toml"
-            sed -i 's/listen_addresses = \[.+\]/listen_addresses = \["127.0.0.1:53", "[::1]:53"\]/' "${install_dir}/dnscrypt-proxy.toml"
+            sed -i 's/# server_names = \[.+\]/server_names = \["cloudflare", "cloudflare-ipv6"\]/' "${install_dir}/dnscrypt-proxy.toml" > /dev/null 2>&1
+            sed -i 's/listen_addresses = \[.+\]/listen_addresses = \["127.0.0.1:53", "[::1]:53"\]/' "${install_dir}/dnscrypt-proxy.toml" > /dev/null 2>&1
 
             # Configure NetworkManager
-            printf "[main]\ndns=none\n" | sudo tee /etc/NetworkManager/conf.d/99-dnscrypt.conf
+            printf "[main]\ndns=none\n" | sudo tee /etc/NetworkManager/conf.d/99-dnscrypt.conf > /dev/null
 
             # Create systemd service
             sudo tee /etc/systemd/system/dnscrypt-proxy.service > /dev/null << EOF
@@ -676,31 +651,31 @@ EOF
 
             # Disable and stop systemd-resolved
             if systemctl is-active systemd-resolved >/dev/null 2>&1; then
-                sudo systemctl stop systemd-resolved
-                sudo systemctl disable systemd-resolved
+                sudo systemctl stop systemd-resolved > /dev/null 2>&1
+                sudo systemctl disable systemd-resolved > /dev/null 2>&1
             fi
 
             # Remove resolvconf if installed
-            if dpkg -l | grep -q resolvconf; then
-                sudo apt -y remove resolvconf
+            if dpkg -l | grep -q resolvconf 2>/dev/null; then
+                sudo apt -y remove resolvconf > /dev/null 2>&1
             fi
 
             # Backup and configure resolv.conf
             if [[ -L /etc/resolv.conf ]]; then
-                sudo rm /etc/resolv.conf
+                sudo rm /etc/resolv.conf > /dev/null 2>&1
             else
-                sudo cp /etc/resolv.conf /etc/resolv.conf.backup
+                sudo cp /etc/resolv.conf /etc/resolv.conf.backup > /dev/null 2>&1
             fi
 
-            printf "nameserver 127.0.0.1\noptions edns0\n" | sudo tee /etc/resolv.conf
+            printf "nameserver 127.0.0.1\noptions edns0\n" | sudo tee /etc/resolv.conf > /dev/null
 
             # Start DNSCrypt service
-            sudo systemctl daemon-reload
-            sudo systemctl enable dnscrypt-proxy
-            sudo systemctl start dnscrypt-proxy
+            sudo systemctl daemon-reload > /dev/null 2>&1
+            sudo systemctl enable dnscrypt-proxy > /dev/null 2>&1
+            sudo systemctl start dnscrypt-proxy > /dev/null 2>&1
 
             # Restart NetworkManager
-            sudo systemctl restart NetworkManager
+            sudo systemctl restart NetworkManager > /dev/null 2>&1
 
         ) & show_progress $! "Installing and configuring DNSCrypt-proxy"
 
@@ -712,9 +687,9 @@ EOF
         printf "   - DNS configuration updated to use DNSCrypt-proxy\n"
 
         if prompt_user "yes_no" "Would you like to test DNS resolution?"; then
-            dig +short google.com
+            dig +short google.com 2>/dev/null
             printf "\nDNS servers in use:\n"
-            resolvectl status
+            resolvectl status 2>/dev/null
         fi
     else
         log "INFO" "DNSCrypt-proxy installation skipped"
@@ -727,18 +702,18 @@ function install_anydesk() {
     if prompt_user "yes_no" "Would you like to install AnyDesk?"; then
         (
             # Add the AnyDesk GPG key
-            sudo apt update
-            sudo apt -y install ca-certificates wget
-            sudo install -m 0755 -d /etc/apt/keyrings
-            wget -qO - https://keys.anydesk.com/repos/DEB-GPG-KEY | sudo gpg --dearmor -o /etc/apt/keyrings/anydesk.gpg
-            sudo chmod a+r /etc/apt/keyrings/keys.anydesk.com.asc
+            sudo apt update > /dev/null 2>&1
+            sudo apt -y install ca-certificates wget > /dev/null 2>&1
+            sudo install -m 0755 -d /etc/apt/keyrings > /dev/null 2>&1
+            wget -qO - https://keys.anydesk.com/repos/DEB-GPG-KEY 2>/dev/null | sudo gpg --dearmor -o /etc/apt/keyrings/anydesk.gpg 2>/dev/null
+            sudo chmod a+r /etc/apt/keyrings/keys.anydesk.com.asc > /dev/null 2>&1
 
             # Add the AnyDesk apt repository
-            printf "deb [signed-by=/etc/apt/keyrings/anydesk.gpg] http://deb.anydesk.com/ all main" | sudo tee /etc/apt/sources.list.d/anydesk.list
+            printf "deb [signed-by=/etc/apt/keyrings/anydesk.gpg] http://deb.anydesk.com/ all main" | sudo tee /etc/apt/sources.list.d/anydesk.list > /dev/null
 
             # Update apt caches and install the AnyDesk client
-            sudo apt update
-            sudo apt -y install anydesk
+            sudo apt update > /dev/null 2>&1
+            sudo apt -y install anydesk > /dev/null 2>&1
         ) & show_progress $! "Installing AnyDesk"
         log "INFO" "AnyDesk installed successfully"
     else

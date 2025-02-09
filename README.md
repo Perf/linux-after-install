@@ -67,17 +67,6 @@ Terminal enhancement suite:
   - Midnight Commander
   - Powerline
 
-### DNS Configuration Scripts
-
-
-#### fix-dns-with-dnscrypt.sh
-Enhanced DNS security solution:
-- Implements [dnscrypt-proxy](https://github.com/DNSCrypt/dnscrypt-proxy)
-- Provides encrypted DNS queries
-- Enhanced privacy and security
-- Systemd service integration
-- Automatic updates and configuration
-
 ### Web3 Support (install-web3.0.sh)
 Blockchain development and cryptocurrency tools:
 - Brave Browser
