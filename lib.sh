@@ -49,8 +49,8 @@ function prompt_user() {
                 printf "%d) %b\n" $((i+1)) "${choices[$i]}"
             done
             printf "Choose [1-%d]: " "${#choices[@]}"
-            read -r selection
-            printf "%b" "$selection"
+            read -r REPLY
+            printf "%b" "$REPLY"
             ;;
         "input")
             if [[ -n "$default" ]]; then
