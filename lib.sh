@@ -8,7 +8,7 @@ function log() {
     local message=$2
     local timestamp
     timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    printf "[%s] [%s] %s\n" "$timestamp" "$level" "$message" >&2
+    printf "[%b] [%b] %b\n" "$timestamp" "$level" "$message" >&2
 }
 
 # Helper function for showing progress
@@ -20,10 +20,10 @@ function show_progress() {
 
     while kill -0 "$pid" 2>/dev/null; do
         i=$(( (i+1) % ${#spin} ))
-        printf "\r[%s] %s..." "${spin:$i:1}" "$message"
+        printf "\r[%b] %b..." "${spin:$i:1}" "$message"
         sleep 0.1
     done
-    printf "\r✓ %s...done\n" "$message"
+    printf "\r✓ %b...done\n" "$message"
 }
 
 # Helper function for user prompt
@@ -35,7 +35,7 @@ function prompt_user() {
 
     # Display formatted message with visual separator
     printf "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-    printf "🔹 %s\n" "$message"
+    printf "🔹 %b\n" "$message"
 
     case "$prompt_type" in
         "yes_no")
@@ -46,11 +46,11 @@ function prompt_user() {
         "choice")
             IFS=',' read -ra choices <<< "$options"
             for i in "${!choices[@]}"; do
-                printf "%d) %s\n" $((i+1)) "${choices[$i]}"
+                printf "%d) %b\n" $((i+1)) "${choices[$i]}"
             done
             printf "Choose [1-%d]: " "${#choices[@]}"
             read -r selection
-            printf "%s" "$selection"
+            printf "%b" "$selection"
             ;;
         "input")
             if [[ -n "$default" ]]; then
