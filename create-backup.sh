@@ -45,15 +45,15 @@ backup_if_exists() {
 }
 
 # Define applications and their backup paths
-# Format: "app_name:process_name:path1 path2 path3"
+# Format: "app_name:process_name:path1;path2;path3"
 declare -a APPS=(
-    "Google Chrome:chrome:$HOME/.config/google-chrome $HOME/.cache/google-chrome"
-    "Microsoft Edge:msedge:$HOME/.config/microsoft-edge $HOME/.cache/microsoft-edge"
-    "Brave:brave:$HOME/.config/BraveSoftware $HOME/.cache/BraveSoftware"
+    "Google Chrome:chrome:$HOME/.config/google-chrome;$HOME/.cache/google-chrome"
+    "Microsoft Edge:msedge:$HOME/.config/microsoft-edge;$HOME/.cache/microsoft-edge"
+    "Brave:brave:$HOME/.config/BraveSoftware;$HOME/.cache/BraveSoftware"
     "AWS VPN:vpn:$HOME/.config/AWSVPNClient"
     "AnyDesk:anydesk:$HOME/.anydesk"
-    "Discord:discord:$HOME/.config/discord $HOME/.config/discordcanary"
-    "Studio 3T:studio3t:$HOME/.3T $HOME/.config/3T"
+    "Discord:discord:$HOME/.config/discord"
+    "Studio 3T:studio3t:$HOME/.3T"
     "Transmission:transgui:$HOME/.config/Transmission Remote GUI"
 )
 
@@ -95,7 +95,9 @@ print_message "$GREEN" "Starting backup process..."
 for app in "${APPS[@]}"; do
     IFS=':' read -r app_name process paths <<< "$app"
     print_message "$GREEN" "Processing $app_name..."
-    for path in $paths; do
+    # Use ; as delimiter for paths
+    IFS=';' read -ra path_array <<< "$paths"
+    for path in "${path_array[@]}"; do
         backup_if_exists "$path" "${BACKUP_DIR}${path#$HOME}"
     done
 done
@@ -114,6 +116,7 @@ tar -czpf "$BACKUP_ARCHIVE" "$BACKUP_DIR"
 print_message "$GREEN" "Cleaning up temporary files..."
 rm -rf "$BACKUP_DIR"
 
+# Show completion message
 print_message "$GREEN" "Backup complete! Archive created: $BACKUP_ARCHIVE"
 print_message "$YELLOW" "To restore on the new system, use:"
 echo "tar -xzpf $BACKUP_ARCHIVE -C \$HOME"
