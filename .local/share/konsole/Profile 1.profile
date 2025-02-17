@@ -1,7 +1,7 @@
 [Appearance]
 ColorScheme=Breeze
-Font=mononoki Nerd Font Mono,12,-1,5,50,0,0,0,0,0,Regular
-UseFontLineChararacters=true
+Font=Mononoki Nerd Font,12,-1,5,50,0,0,0,0,0,Regular
+UseFontLineCharacters=true
 
 [General]
 Command=/bin/bash -l
