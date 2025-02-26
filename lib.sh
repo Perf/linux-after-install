@@ -733,3 +733,17 @@ function install_transgui() {
         log "INFO" "Transmission Remote GUI installation skipped"
     fi
 }
+
+function install_goose_cli() {
+    log "INFO" "Starting Goose CLI installation"
+
+    if prompt_user "yes_no" "Would you like to install Goose CLI?"; then
+        (
+            curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | CONFIGURE=false bash
+        ) & show_progress $! "Installing Goose CLI"
+        log "INFO" "Goose CLI installed successfully"
+        log "INFO" "please run 'goose configure' after..."
+    else
+        log "INFO" "Goose CLI installation skipped"
+    fi
+}

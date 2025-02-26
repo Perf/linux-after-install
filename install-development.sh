@@ -25,3 +25,5 @@ install_phpstorm_url_handler
 install_aws_cli
 
 install_k8s_lens_desktop
+
+install_goose_cli
