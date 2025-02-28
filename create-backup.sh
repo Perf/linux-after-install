@@ -56,6 +56,8 @@ declare -a APPS=(
     "Studio 3T:studio3t:$HOME/.3T"
     "Transmission:transgui:$HOME/.config/Transmission Remote GUI"
     "Ledger Live:ledger-live:$HOME/.config/Ledger Live"
+    "Claude Code:claude:$HOME/.claude.json"
+    "Goose CLI:goose:$HOME/.config/goose"
 )
 
 # Define standalone config files and directories

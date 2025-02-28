@@ -747,3 +747,392 @@ function install_goose_cli() {
         log "INFO" "Goose CLI installation skipped"
     fi
 }
+
+function install_claude_code() {
+    log "INFO" "Starting Claude Code installation"
+
+    if prompt_user "yes_no" "Would you like to install Claude Code?"; then
+        (
+            # Download and run the official installer
+            curl -fsSL https://claude.ai/claude-code/install.sh | bash
+        ) & show_progress $! "Installing Claude Code"
+        log "INFO" "Claude Code installed successfully"
+        log "INFO" "Run 'claude' to start using Claude Code"
+    else
+        log "INFO" "Claude Code installation skipped"
+    fi
+}
+
+function perform_system_update() {
+    log "INFO" "Starting full system update"
+    
+    if prompt_user "yes_no" "Would you like to perform a full system update?"; then
+        (
+            sudo apt -y update > /dev/null 2>&1
+            sudo apt -y full-upgrade > /dev/null 2>&1
+        ) & show_progress $! "Updating system packages"
+        log "INFO" "System update completed successfully"
+    else
+        log "INFO" "System update skipped"
+    fi
+}
+
+function install_common_utilities() {
+    log "INFO" "Starting installation of common utilities"
+    
+    if prompt_user "yes_no" "Would you like to install common utility packages?"; then
+        (
+            sudo apt -y install \
+                software-properties-common \
+                build-essential \
+                htop \
+                jq \
+                wget \
+                curl \
+                inxi \
+                apt-transport-https \
+                fwupd-signed > /dev/null 2>&1
+        ) & show_progress $! "Installing common utilities"
+        log "INFO" "Common utilities installed successfully"
+    else
+        log "INFO" "Common utilities installation skipped"
+    fi
+}
+
+function disable_kde_baloo() {
+    log "INFO" "Starting KDE Baloo indexer configuration"
+    
+    if prompt_user "yes_no" "Would you like to disable the KDE Baloo file indexer? (Improves performance)"; then
+        (
+            balooctl disable > /dev/null 2>&1
+            balooctl purge > /dev/null 2>&1
+        ) & show_progress $! "Disabling KDE Baloo indexer"
+        log "INFO" "KDE Baloo indexer disabled successfully"
+    else
+        log "INFO" "KDE Baloo indexer configuration skipped"
+    fi
+}
+
+function perform_cleanup() {
+    log "INFO" "Starting system cleanup"
+    
+    if prompt_user "yes_no" "Would you like to clean up package caches and remove unused packages?"; then
+        (
+            sudo apt -y autoclean > /dev/null 2>&1
+            sudo apt -y autoremove > /dev/null 2>&1
+        ) & show_progress $! "Cleaning up system"
+        log "INFO" "System cleanup completed successfully"
+    else
+        log "INFO" "System cleanup skipped"
+    fi
+}
+
+#
+# Terminal Customization Functions
+#
+
+function install_terminal_tools() {
+    log "INFO" "Starting terminal tools installation"
+    
+    if prompt_user "yes_no" "Would you like to install terminal tools and utilities?"; then
+        (
+            sudo apt -y install fontconfig mc vim git socat konsole yakuake powerline > /dev/null 2>&1
+        ) & show_progress $! "Installing terminal tools"
+        log "INFO" "Terminal tools installed successfully"
+    else
+        log "INFO" "Terminal tools installation skipped"
+    fi
+}
+
+function install_nerd_fonts() {
+    log "INFO" "Starting Nerd Fonts installation"
+    
+    if prompt_user "yes_no" "Would you like to install Mononoki Nerd Font?"; then
+        (
+            # Create fonts directory if it doesn't exist
+            FONT_DIR="$HOME/.local/share/fonts"
+            mkdir -p "$FONT_DIR"
+            
+            # Create temporary directory for download
+            TEMP_DIR=$(mktemp -d)
+            cd "$TEMP_DIR"
+            
+            # Get the latest release version from GitHub API
+            LATEST_VERSION=$(curl -s https://api.github.com/repos/ryanoasis/nerd-fonts/releases/latest | grep "tag_name" | cut -d'"' -f4)
+            if [ -z "$LATEST_VERSION" ]; then
+                log "ERROR" "Could not determine latest Nerd Fonts version"
+                return 1
+            fi
+            
+            # Download Mononoki font
+            FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/download/${LATEST_VERSION}/Mononoki.zip"
+            wget -q "$FONT_URL" 
+            unzip -q Mononoki.zip -d "$FONT_DIR/Mononoki"
+            cd - > /dev/null
+            rm -rf "$TEMP_DIR"
+            fc-cache -f > /dev/null 2>&1
+            
+            # Set as default monospace font if KDE is available
+            if command -v kwriteconfig5 > /dev/null 2>&1; then
+                kwriteconfig5 --file ~/.config/kdeglobals --group General --key fixed "Mononoki Nerd Font,12,-1,5,50,0,0,0,0,0,Regular"
+            fi
+        ) & show_progress $! "Installing Mononoki Nerd Font"
+        
+        if fc-list | grep -i "Mononoki" > /dev/null; then
+            log "INFO" "Mononoki Nerd Font installed successfully"
+        else
+            log "WARN" "Font installation may have failed"
+        fi
+    else
+        log "INFO" "Nerd Fonts installation skipped"
+    fi
+}
+
+function install_starship_prompt() {
+    log "INFO" "Starting Starship prompt installation"
+    
+    if prompt_user "yes_no" "Would you like to install Starship prompt?"; then
+        (
+            # Install Starship
+            curl -sS https://starship.rs/install.sh | sh > /dev/null 2>&1
+            
+            # Create backup of existing .bashrc
+            if [ -f ~/.bashrc ]; then
+                cp ~/.bashrc ~/.bashrc.bak
+            fi
+            
+            # Add starship init to ~/.bashrc if not already present
+            if ! grep -q "starship init bash" ~/.bashrc; then
+                echo 'eval "$(starship init bash)"' >> ~/.bashrc
+            fi
+            
+            # Setup gruvbox-rainbow preset
+            mkdir -p ~/.config
+            starship preset gruvbox-rainbow -o ~/.config/starship.toml > /dev/null 2>&1
+        ) & show_progress $! "Installing Starship prompt"
+        log "INFO" "Starship prompt installed successfully"
+    else
+        log "INFO" "Starship prompt installation skipped"
+    fi
+}
+
+function make_terminal_sexy() {
+    log "INFO" "Starting terminal customization"
+    
+    install_terminal_tools
+    install_nerd_fonts
+    install_starship_prompt
+    
+    log "INFO" "Terminal customization completed"
+}
+
+#
+# Installation Menu System
+#
+
+# Function to show a checkbox menu with whiptail
+function show_whiptail_menu() {
+    local title=$1
+    local -n options_ref=$2
+    local -n funcs_ref=$3
+    local -n recommended_ref=$4
+    
+    # Prepare options array for whiptail
+    local num_options=${#options_ref[@]}
+    local whiptail_options=()
+    
+    # Add special options
+    whiptail_options+=("ALL" "Select All Options" "OFF")
+    whiptail_options+=("RECOMMENDED" "Select Recommended Options" "OFF")
+    whiptail_options+=("NONE" "Deselect All Options" "OFF")
+    
+    # Add regular options
+    for ((i=0; i<num_options; i++)); do
+        whiptail_options+=("$i" "${options_ref[$i]}" "OFF")
+    done
+    
+    # Calculate height and width
+    local height=$((num_options + 15))
+    local width=78
+    
+    # Show checkbox dialog
+    local selected=$(whiptail --title "$title" \
+                      --checklist "Select options to install (SPACE to toggle, ENTER to confirm):" \
+                      $height $width $((num_options + 5)) \
+                      "${whiptail_options[@]}" \
+                      3>&1 1>&2 2>&3)
+    
+    # Exit if cancelled
+    if [ $? -ne 0 ]; then
+        echo "Cancelled"
+        return 1
+    fi
+    
+    # Handle special selections
+    if [[ $selected == *"ALL"* ]]; then
+        # Return all function names
+        for ((i=0; i<num_options; i++)); do
+            echo "${funcs_ref[$i]}"
+        done
+        return 0
+    elif [[ $selected == *"RECOMMENDED"* ]]; then
+        # Return recommended function names
+        for ((i=0; i<num_options; i++)); do
+            if [[ ${recommended_ref[$i]} -eq 1 ]]; then
+                echo "${funcs_ref[$i]}"
+            fi
+        done
+        return 0
+    elif [[ $selected == *"NONE"* ]]; then
+        # Return nothing
+        return 0
+    fi
+    
+    # Process regular selections
+    for item in $(echo $selected | tr -d '"' | tr ' ' '\n'); do
+        if [[ $item =~ ^[0-9]+$ ]]; then
+            echo "${funcs_ref[$item]}"
+        fi
+    done
+    
+    return 0
+}
+
+# Function to show a checkbox menu with pure bash
+function show_bash_menu() {
+    local title=$1
+    local -n options_ref=$2
+    local -n funcs_ref=$3
+    local -n recommended_ref=$4
+    
+    local num_options=${#options_ref[@]}
+    local selected=()
+    
+    # Initialize all as unselected
+    for ((i=0; i<num_options; i++)); do
+        selected[$i]=0
+    done
+    
+    while true; do
+        clear
+        echo "================================================================================"
+        echo "                            $title"
+        echo "================================================================================"
+        echo ""
+        echo "Select options to install (enter numbers to toggle, then press ENTER when done):"
+        echo ""
+        
+        # Special options
+        echo "Special options:"
+        echo "  A) [ ] Select All"
+        echo "  R) [ ] Select Recommended"
+        echo "  N) [ ] Deselect All"
+        echo ""
+        
+        # Regular options
+        echo "Installation options:"
+        for ((i=0; i<num_options; i++)); do
+            local checkbox="[ ]"
+            local recommend=""
+            
+            if [[ ${selected[$i]} -eq 1 ]]; then
+                checkbox="[x]"
+            fi
+            
+            if [[ ${recommended_ref[$i]} -eq 1 ]]; then
+                recommend=" (recommended)"
+            fi
+            
+            printf "  %2d) %s %s%s\n" $((i+1)) "$checkbox" "${options_ref[$i]}" "$recommend"
+        done
+        
+        echo ""
+        echo "Enter your selection (numbers, A, R, N, or 'done' to proceed): "
+        read -r selection
+        
+        # Handle special inputs
+        if [[ "${selection,,}" == "a" ]]; then
+            # Select all
+            for ((i=0; i<num_options; i++)); do
+                selected[$i]=1
+            done
+        elif [[ "${selection,,}" == "r" ]]; then
+            # Select recommended
+            for ((i=0; i<num_options; i++)); do
+                if [[ ${recommended_ref[$i]} -eq 1 ]]; then
+                    selected[$i]=1
+                else
+                    selected[$i]=0
+                fi
+            done
+        elif [[ "${selection,,}" == "n" ]]; then
+            # Deselect all
+            for ((i=0; i<num_options; i++)); do
+                selected[$i]=0
+            done
+        elif [[ "${selection,,}" == "done" || -z "$selection" ]]; then
+            # Confirm selection
+            break
+        else
+            # Toggle individual selections
+            IFS=',' read -ra indices <<< "$selection"
+            for index in "${indices[@]}"; do
+                if [[ "$index" =~ ^[0-9]+$ ]]; then
+                    idx=$((index-1))
+                    if [[ $idx -ge 0 && $idx -lt num_options ]]; then
+                        selected[$idx]=$((1-selected[$idx]))  # Toggle
+                    fi
+                fi
+            done
+        fi
+    done
+    
+    # Return selected function names
+    for ((i=0; i<num_options; i++)); do
+        if [[ ${selected[$i]} -eq 1 ]]; then
+            echo "${funcs_ref[$i]}"
+        fi
+    done
+    
+    return 0
+}
+
+# Main installation menu function with fallback
+function show_installation_menu() {
+    local title=$1
+    local -n options_ref=$2
+    local -n funcs_ref=$3
+    local -n recommended_ref=$4
+    
+    # Check if whiptail is available
+    if command -v whiptail >/dev/null 2>&1; then
+        # Use whiptail
+        show_whiptail_menu "$title" options_ref funcs_ref recommended_ref
+        return $?
+    else
+        # Offer to install whiptail
+        echo "The 'whiptail' package is not installed. It provides a better interface for selections."
+        echo "Would you like to install it now? (y/n)"
+        read -r install_whiptail
+        
+        if [[ "${install_whiptail,,}" == "y"* ]]; then
+            log "INFO" "Installing whiptail for improved UI"
+            (
+                sudo apt-get update -qq >/dev/null 2>&1
+                sudo apt-get install -y libnewt0.52 >/dev/null 2>&1
+            ) & show_progress $! "Installing whiptail"
+            
+            # Now try whiptail again
+            if command -v whiptail >/dev/null 2>&1; then
+                show_whiptail_menu "$title" options_ref funcs_ref recommended_ref
+                return $?
+            else
+                log "WARN" "Failed to install whiptail, using fallback UI"
+            fi
+        fi
+        
+        # Fallback to bash UI
+        show_bash_menu "$title" options_ref funcs_ref recommended_ref
+        return $?
+    fi
+}
