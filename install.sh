@@ -209,18 +209,24 @@ function run_ai_tools_setup() {
     declare -a DISPLAY_NAMES=(
         "Claude Code"
         "Goose CLI"
+        "Windsurf IDE"
+        "Cursor IDE"
     )
 
     # Define function names
     declare -a FUNCTION_NAMES=(
         "install_claude_code"
         "install_goose_cli"
+        "install_windsurf_ide"
+        "install_cursor_ide"
     )
 
     # Define recommended options
     declare -a RECOMMENDED=(
         1 # Claude Code
         0 # Goose CLI
+        0 # Windsurf IDE
+        0 # Cursor IDE
     )
 
     echo "Select AI tools to install"
@@ -244,7 +250,6 @@ function run_development_setup() {
     # Define available installations with display names
     declare -a DISPLAY_NAMES=(
         "Visual Studio Code"
-        "Cursor IDE"
         "JetBrains Toolbox"
         "Docker & Docker Compose"
         "Podman CLI & Desktop"
@@ -258,7 +263,6 @@ function run_development_setup() {
     # Define function names corresponding to each option
     declare -a FUNCTION_NAMES=(
         "install_vscode"
-        "install_cursor_ide"
         "install_jetbrains_toolbox"
         "install_docker_and_docker_compose"
         "install_podman_cli_and_desktop"
@@ -272,7 +276,6 @@ function run_development_setup() {
     # Define which options are recommended (1 = recommended, 0 = optional)
     declare -a RECOMMENDED=(
         0 # VS Code
-        0 # Cursor IDE
         1 # JetBrains Toolbox
         1 # Docker
         0 # Podman

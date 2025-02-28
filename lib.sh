@@ -763,6 +763,28 @@ function install_claude_code() {
     fi
 }
 
+function install_windsurf_ide() {
+    log "INFO" "Starting Windsurf IDE installation"
+
+    if prompt_user "yes_no" "Would you like to install Windsurf IDE? (Codeium's open source AI coding assistant)"; then
+        (
+            # Add the repository to sources.list.d
+            curl -fsSL "https://windsurf-stable.codeiumdata.com/wVxQEIWkwPUEAGf3/windsurf.gpg" | sudo gpg --dearmor -o /usr/share/keyrings/windsurf-stable-archive-keyring.gpg > /dev/null 2>&1
+            echo "deb [signed-by=/usr/share/keyrings/windsurf-stable-archive-keyring.gpg arch=amd64] https://windsurf-stable.codeiumdata.com/wVxQEIWkwPUEAGf3/apt stable main" | sudo tee /etc/apt/sources.list.d/windsurf.list > /dev/null
+            
+            # Update package lists
+            sudo apt-get update > /dev/null 2>&1
+            
+            # Install Windsurf
+            sudo apt-get -y install windsurf > /dev/null 2>&1
+        ) & show_progress $! "Installing Windsurf IDE"
+        log "INFO" "Windsurf IDE installed successfully"
+        log "INFO" "Run 'windsurf' to start using Windsurf IDE"
+    else
+        log "INFO" "Windsurf IDE installation skipped"
+    fi
+}
+
 function perform_system_update() {
     log "INFO" "Starting full system update"
     
