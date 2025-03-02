@@ -5,13 +5,14 @@
 source "$(dirname "${BASH_SOURCE[0]}")/utils.sh"
 
 # Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+# Only define if not already set
+if [[ -z "${RED:-}" ]]; then RED='\033[0;31m'; fi
+if [[ -z "${GREEN:-}" ]]; then GREEN='\033[0;32m'; fi
+if [[ -z "${YELLOW:-}" ]]; then YELLOW='\033[1;33m'; fi
+if [[ -z "${BLUE:-}" ]]; then BLUE='\033[0;34m'; fi
+if [[ -z "${PURPLE:-}" ]]; then PURPLE='\033[0;35m'; fi
+if [[ -z "${CYAN:-}" ]]; then CYAN='\033[0;36m'; fi
+if [[ -z "${NC:-}" ]]; then NC='\033[0m'; fi # No Color
 
 # Function to show welcome message for installation
 function show_welcome_message() {
