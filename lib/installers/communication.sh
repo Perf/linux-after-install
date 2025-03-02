@@ -4,9 +4,9 @@
 # Contains functions for installing communication and collaboration tools
 
 # Source common utilities
-source "$(dirname "$(dirname "$0")")/core/utils.sh"
-source "$(dirname "$(dirname "$0")")/core/ui.sh"
-source "$(dirname "$0")/template.sh"
+source "$(dirname "$(dirname "${BASH_SOURCE[0]}")")/core/utils.sh"
+source "$(dirname "$(dirname "${BASH_SOURCE[0]}")")/core/ui.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/template.sh"
 
 function install_slack() {
     log "INFO" "Starting Slack installation"

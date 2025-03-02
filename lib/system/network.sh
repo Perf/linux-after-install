@@ -4,8 +4,8 @@
 # Contains functions for configuring network settings
 
 # Source common utilities
-source "$(dirname "$(dirname "$0")")/core/utils.sh"
-source "$(dirname "$(dirname "$0")")/core/ui.sh"
+source "$(dirname "$(dirname "${BASH_SOURCE[0]}")")/core/utils.sh"
+source "$(dirname "$(dirname "${BASH_SOURCE[0]}")")/core/ui.sh"
 
 function install_dnscrypt_proxy() {
     log "INFO" "Starting DNSCrypt-proxy installation"

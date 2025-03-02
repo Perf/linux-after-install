@@ -4,9 +4,9 @@
 # Contains functions for customizing terminal appearance and functionality
 
 # Source common utilities
-source "$(dirname "$(dirname "$0")")/core/utils.sh"
-source "$(dirname "$(dirname "$0")")/core/ui.sh"
-source "$(dirname "$0")/template.sh"
+source "$(dirname "$(dirname "${BASH_SOURCE[0]}")")/core/utils.sh"
+source "$(dirname "$(dirname "${BASH_SOURCE[0]}")")/core/ui.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/template.sh"
 
 function install_terminal_tools() {
     log "INFO" "Starting terminal tools installation"
