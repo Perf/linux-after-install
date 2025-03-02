@@ -1,11 +1,35 @@
 #!/usr/bin/env bash
 
+# Set error handling
 set -eu
 
 # Get sudo permissions upfront
 sudo echo ""
 
-source ./lib.sh
+# Source core libraries
+source ./lib/core/utils.sh
+source ./lib/core/ui.sh
+source ./lib/core/menu.sh
+
+# Source module libraries
+source ./lib/installers/template.sh
+source ./lib/system/config.sh
+source ./lib/system/network.sh
+source ./lib/installers/browsers.sh
+source ./lib/installers/development.sh
+source ./lib/installers/communication.sh
+source ./lib/installers/ai_tools.sh
+source ./lib/installers/terminal.sh
+source ./lib/installers/web3.sh
+
+# Load configuration files
+source ./config/system.conf
+source ./config/browsers.conf
+source ./config/development.conf
+source ./config/communication.conf
+source ./config/ai_tools.conf
+source ./config/terminal.conf
+source ./config/web3.conf
 
 # Show main welcome message
 clear
@@ -61,338 +85,158 @@ function show_main_menu() {
     done
 }
 
-# System Setup Section
-function run_system_setup() {
-    # Define system setup options
-    declare -a DISPLAY_NAMES=(
-        "Remove Snapd"
-        "Set System Hostname"
-        "Set Swappiness"
-        "Add OIBAF Repository"
-        "Add Kubuntu Backports Repository"
-        "Full System Update"
-        "Install Common Utilities"
-        "Disable KDE Baloo Indexer"
-    )
-
-    # Define function names for system setup
-    declare -a FUNCTION_NAMES=(
-        "remove_snapd"
-        "set_hostname"
-        "set_swappiness"
-        "add_oibaf_repo"
-        "add_kubuntu_backports_repo"
-        "perform_system_update"
-        "install_common_utilities"
-        "disable_kde_baloo"
-    )
-
-    # Define recommended options
-    declare -a SYSTEM_RECOMMENDED=(
-        1 # Remove snapd
-        1 # Set hostname
-        1 # Set swappiness
-        0 # Add OIBAF repo
-        0 # Add Kubuntu Backports
-        1 # Full system update
-        1 # Common utilities
-        1 # Disable Baloo
-    )
-
-    echo "Select system configuration options"
-    selected_system=$(show_installation_menu "System Configuration" DISPLAY_NAMES FUNCTION_NAMES SYSTEM_RECOMMENDED)
-
-    # Check if cancelled
-    if [[ "$selected_system" == "Cancelled" ]]; then
-        return
-    fi
-
-    # Run selected system functions
-    if [[ -n "$selected_system" ]]; then
-        echo "Applying system configurations..."
-        for func in $selected_system; do
+# Generic function to process installation selections
+function process_installations() {
+    local selected_functions=$1
+    
+    if [[ -n "$selected_functions" ]]; then
+        for func in $selected_functions; do
             $func
         done
     fi
+}
 
+# System Setup Section
+function run_system_setup() {
+    # Extract arrays from configuration
+    declare -a DISPLAY_NAMES=()
+    declare -a FUNCTION_NAMES=()
+    declare -a RECOMMENDED=()
+    
+    # Parse configuration
+    for config_item in "${SYSTEM_CONFIG[@]}"; do
+        IFS=':' read -r display_name function_name recommend <<< "$config_item"
+        DISPLAY_NAMES+=("$display_name")
+        FUNCTION_NAMES+=("$function_name")
+        RECOMMENDED+=("$recommend")
+    done
+    
+    # Show menu and process selections
+    echo "Select system configuration options"
+    process_menu_selections "System Configuration" DISPLAY_NAMES FUNCTION_NAMES RECOMMENDED process_installations
+    
     # Always offer cleanup at the end
     perform_cleanup
 }
 
 # Web Browsers & Internet Tools Section
 function run_web_browsers_setup() {
-    # Define browser options
-    declare -a DISPLAY_NAMES=(
-        "Google Chrome"
-        "Microsoft Edge"
-        "Brave Browser"
-        "Transmission Remote GUI"
-    )
-
-    # Define function names
-    declare -a FUNCTION_NAMES=(
-        "install_google_chrome"
-        "install_microsoft_edge"
-        "install_brave"
-        "install_transgui"
-    )
-
-    # Define recommended options
-    declare -a RECOMMENDED=(
-        1 # Google Chrome
-        1 # Microsoft Edge
-        1 # Brave
-        1 # Transmission
-    )
-
+    # Extract arrays from configuration
+    declare -a DISPLAY_NAMES=()
+    declare -a FUNCTION_NAMES=()
+    declare -a RECOMMENDED=()
+    
+    # Parse configuration
+    for browser in "${BROWSER_APPS[@]}"; do
+        IFS=':' read -r display_name function_name recommend <<< "$browser"
+        DISPLAY_NAMES+=("$display_name")
+        FUNCTION_NAMES+=("$function_name")
+        RECOMMENDED+=("$recommend")
+    done
+    
+    # Show menu and process selections
     echo "Select web browsers and internet tools to install"
-    selected_functions=$(show_installation_menu "Web Browsers & Internet Tools" DISPLAY_NAMES FUNCTION_NAMES RECOMMENDED)
-
-    # Check if cancelled
-    if [[ "$selected_functions" == "Cancelled" ]]; then
-        return
-    fi
-
-    # Run selected installations
-    if [[ -n "$selected_functions" ]]; then
-        for func in $selected_functions; do
-            $func
-        done
-    fi
-}
-
-# Communication & Collaboration Tools Section
-function run_communication_setup() {
-    # Define communication tools
-    declare -a DISPLAY_NAMES=(
-        "Slack"
-        "Discord"
-        "Zoom"
-        "AnyDesk"
-    )
-
-    # Define function names
-    declare -a FUNCTION_NAMES=(
-        "install_slack"
-        "install_discord"
-        "install_zoom"
-        "install_anydesk"
-    )
-
-    # Define recommended options
-    declare -a RECOMMENDED=(
-        1 # Slack
-        1 # Discord
-        1 # Zoom
-        1 # AnyDesk
-    )
-
-    echo "Select communication and collaboration tools to install"
-    selected_functions=$(show_installation_menu "Communication & Collaboration Tools" DISPLAY_NAMES FUNCTION_NAMES RECOMMENDED)
-
-    # Check if cancelled
-    if [[ "$selected_functions" == "Cancelled" ]]; then
-        return
-    fi
-
-    # Run selected installations
-    if [[ -n "$selected_functions" ]]; then
-        for func in $selected_functions; do
-            $func
-        done
-    fi
-}
-
-# AI Tools Section
-function run_ai_tools_setup() {
-    # Define AI tools
-    declare -a DISPLAY_NAMES=(
-        "Claude Code"
-        "Goose CLI"
-        "Windsurf IDE"
-        "Cursor IDE"
-    )
-
-    # Define function names
-    declare -a FUNCTION_NAMES=(
-        "install_claude_code"
-        "install_goose_cli"
-        "install_windsurf_ide"
-        "install_cursor_ide"
-    )
-
-    # Define recommended options
-    declare -a RECOMMENDED=(
-        1 # Claude Code
-        0 # Goose CLI
-        0 # Windsurf IDE
-        0 # Cursor IDE
-    )
-
-    echo "Select AI tools to install"
-    selected_functions=$(show_installation_menu "AI Tools" DISPLAY_NAMES FUNCTION_NAMES RECOMMENDED)
-
-    # Check if cancelled
-    if [[ "$selected_functions" == "Cancelled" ]]; then
-        return
-    fi
-
-    # Run selected installations
-    if [[ -n "$selected_functions" ]]; then
-        for func in $selected_functions; do
-            $func
-        done
-    fi
+    process_menu_selections "Web Browsers & Internet Tools" DISPLAY_NAMES FUNCTION_NAMES RECOMMENDED process_installations
 }
 
 # Development Tools Section
 function run_development_setup() {
-    # Define available installations with display names
-    declare -a DISPLAY_NAMES=(
-        "Visual Studio Code"
-        "JetBrains Toolbox"
-        "Docker & Docker Compose"
-        "Podman CLI & Desktop"
-        "Cloud Tools"
-        "Ctop (Container Top)"
-        "PhpStorm URL Handler"
-        "AWS CLI"
-        "K8s Lens Desktop"
-    )
-
-    # Define function names corresponding to each option
-    declare -a FUNCTION_NAMES=(
-        "install_vscode"
-        "install_jetbrains_toolbox"
-        "install_docker_and_docker_compose"
-        "install_podman_cli_and_desktop"
-        "install_cloud_tools"
-        "install_ctop"
-        "install_phpstorm_url_handler"
-        "install_aws_cli"
-        "install_k8s_lens_desktop"
-    )
-
-    # Define which options are recommended (1 = recommended, 0 = optional)
-    declare -a RECOMMENDED=(
-        0 # VS Code
-        1 # JetBrains Toolbox
-        1 # Docker
-        0 # Podman
-        0 # Cloud Tools
-        1 # Ctop
-        1 # PhpStorm URL Handler
-        1 # AWS CLI
-        1 # K8s Lens
-    )
-
-    # Show menu and get selections
-    selected_functions=$(show_installation_menu "Development Tools Installation" DISPLAY_NAMES FUNCTION_NAMES RECOMMENDED)
-
-    # Check if the menu was cancelled
-    if [[ "$selected_functions" == "Cancelled" ]]; then
-        return
-    fi
-
-    # Check if any options were selected
-    if [[ -z "$selected_functions" ]]; then
-        echo "No options selected."
-        return
-    fi
-
-    # Run selected installations
-    for func in $selected_functions; do
-        # Execute the function by name
-        $func
+    # Extract arrays from configuration
+    declare -a DISPLAY_NAMES=()
+    declare -a FUNCTION_NAMES=()
+    declare -a RECOMMENDED=()
+    
+    # Parse configuration
+    for dev_tool in "${DEVELOPMENT_APPS[@]}"; do
+        IFS=':' read -r display_name function_name recommend <<< "$dev_tool"
+        DISPLAY_NAMES+=("$display_name")
+        FUNCTION_NAMES+=("$function_name")
+        RECOMMENDED+=("$recommend")
     done
+    
+    # Show menu and process selections
+    echo "Select development tools to install"
+    process_menu_selections "Development Tools" DISPLAY_NAMES FUNCTION_NAMES RECOMMENDED process_installations
+}
+
+# Communication & Collaboration Tools Section
+function run_communication_setup() {
+    # Extract arrays from configuration
+    declare -a DISPLAY_NAMES=()
+    declare -a FUNCTION_NAMES=()
+    declare -a RECOMMENDED=()
+    
+    # Parse configuration
+    for comm_tool in "${COMMUNICATION_APPS[@]}"; do
+        IFS=':' read -r display_name function_name recommend <<< "$comm_tool"
+        DISPLAY_NAMES+=("$display_name")
+        FUNCTION_NAMES+=("$function_name")
+        RECOMMENDED+=("$recommend")
+    done
+    
+    # Show menu and process selections
+    echo "Select communication and collaboration tools to install"
+    process_menu_selections "Communication & Collaboration Tools" DISPLAY_NAMES FUNCTION_NAMES RECOMMENDED process_installations
+}
+
+# AI Tools Section
+function run_ai_tools_setup() {
+    # Extract arrays from configuration
+    declare -a DISPLAY_NAMES=()
+    declare -a FUNCTION_NAMES=()
+    declare -a RECOMMENDED=()
+    
+    # Parse configuration
+    for ai_tool in "${AI_TOOLS_APPS[@]}"; do
+        IFS=':' read -r display_name function_name recommend <<< "$ai_tool"
+        DISPLAY_NAMES+=("$display_name")
+        FUNCTION_NAMES+=("$function_name")
+        RECOMMENDED+=("$recommend")
+    done
+    
+    # Show menu and process selections
+    echo "Select AI tools to install"
+    process_menu_selections "AI Tools" DISPLAY_NAMES FUNCTION_NAMES RECOMMENDED process_installations
 }
 
 # Web 3.0 Tools Section
 function run_web3_setup() {
-    # Define available installations with display names
-    declare -a DISPLAY_NAMES=(
-        "Ledger Live"
-        "Ledger Udev Rules"
-    )
-
-    # Define function names corresponding to each option
-    declare -a FUNCTION_NAMES=(
-        "install_ledger_live"
-        "install_ledger_udev_rules"
-    )
-
-    # Define which options are recommended (1 = recommended, 0 = optional)
-    declare -a RECOMMENDED=(
-        1 # Ledger Live
-        1 # Ledger Udev Rules
-    )
-
-    # Show menu and get selections
-    selected_functions=$(show_installation_menu "Web3.0 Tools Installation" DISPLAY_NAMES FUNCTION_NAMES RECOMMENDED)
-
-    # Check if the menu was cancelled
-    if [[ "$selected_functions" == "Cancelled" ]]; then
-        return
-    fi
-
-    # Check if any options were selected
-    if [[ -z "$selected_functions" ]]; then
-        echo "No options selected."
-        return
-    fi
-
-    # Run selected installations
-    for func in $selected_functions; do
-        # Execute the function by name
-        $func
+    # Extract arrays from configuration
+    declare -a DISPLAY_NAMES=()
+    declare -a FUNCTION_NAMES=()
+    declare -a RECOMMENDED=()
+    
+    # Parse configuration
+    for web3_tool in "${WEB3_APPS[@]}"; do
+        IFS=':' read -r display_name function_name recommend <<< "$web3_tool"
+        DISPLAY_NAMES+=("$display_name")
+        FUNCTION_NAMES+=("$function_name")
+        RECOMMENDED+=("$recommend")
     done
+    
+    # Show menu and process selections
+    echo "Select Web 3.0 tools to install"
+    process_menu_selections "Web 3.0 Tools" DISPLAY_NAMES FUNCTION_NAMES RECOMMENDED process_installations
 }
 
 # Terminal Customization Section
 function run_terminal_setup() {
-    # Define available terminal customizations
-    declare -a DISPLAY_NAMES=(
-        "Terminal Tools & Utilities"
-        "Mononoki Nerd Font"
-        "Starship Prompt"
-        "All Terminal Customizations"
-    )
-
-    # Define function names
-    declare -a FUNCTION_NAMES=(
-        "install_terminal_tools"
-        "install_nerd_fonts"
-        "install_starship_prompt"
-        "make_terminal_sexy"
-    )
-
-    # Define recommended options
-    declare -a RECOMMENDED=(
-        0 # Terminal Tools
-        0 # Nerd Font
-        0 # Starship
-        1 # All
-    )
-
-    # Show menu and get selections
-    selected_functions=$(show_installation_menu "Terminal Customization" DISPLAY_NAMES FUNCTION_NAMES RECOMMENDED)
-
-    # Check if the menu was cancelled
-    if [[ "$selected_functions" == "Cancelled" ]]; then
-        return
-    fi
-
-    # Check if any options were selected
-    if [[ -z "$selected_functions" ]]; then
-        echo "No options selected."
-        return
-    fi
-
-    # Run selected customizations
-    for func in $selected_functions; do
-        # Execute the function by name
-        $func
+    # Extract arrays from configuration
+    declare -a DISPLAY_NAMES=()
+    declare -a FUNCTION_NAMES=()
+    declare -a RECOMMENDED=()
+    
+    # Parse configuration
+    for terminal_tool in "${TERMINAL_APPS[@]}"; do
+        IFS=':' read -r display_name function_name recommend <<< "$terminal_tool"
+        DISPLAY_NAMES+=("$display_name")
+        FUNCTION_NAMES+=("$function_name")
+        RECOMMENDED+=("$recommend")
     done
+    
+    # Show menu and process selections
+    echo "Select terminal customizations to apply"
+    process_menu_selections "Terminal Customization" DISPLAY_NAMES FUNCTION_NAMES RECOMMENDED process_installations
 }
 
 # Run All Categories
