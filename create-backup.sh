@@ -77,7 +77,8 @@ function run_backup() {
     local backup_dir="app_backup_${timestamp}"
     local backup_archive="${backup_dir}.tar.gz"
 
-    # Perform the backup
+    # Set BACKUP_DIR for operations.sh and perform the backup
+    export BACKUP_DIR="$backup_dir"
     perform_backup "$backup_dir" "$backup_archive"
 
     return $?
