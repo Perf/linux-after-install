@@ -72,8 +72,13 @@ function run_backup() {
     # Prepare and show the backup menu
     prepare_backup_menu
 
+    # Create backup name
+    local timestamp=$(date +%Y%m%d_%H%M%S)
+    local backup_dir="app_backup_${timestamp}"
+    local backup_archive="${backup_dir}.tar.gz"
+
     # Perform the backup
-    perform_backup
+    perform_backup "$backup_dir" "$backup_archive"
 
     return $?
 }
@@ -104,7 +109,7 @@ function show_backup_welcome_message() {
 function main() {
     # Load backup configurations directly
     source "./config/backup.conf"
-    
+
     # Check if variables were loaded correctly
     if [[ ${#BACKUP_APPS[@]} -eq 0 ]]; then
         log "ERROR" "No applications defined in backup configuration"
@@ -114,7 +119,7 @@ function main() {
     if [[ ${#BACKUP_CONFIGS[@]} -eq 0 ]]; then
         log "WARN" "No configuration files defined in backup configuration"
     fi
-    
+
     log "INFO" "Loaded backup configuration with ${#BACKUP_APPS[@]} apps and ${#BACKUP_CONFIGS[@]} configs"
 
     # Show welcome message

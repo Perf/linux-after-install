@@ -78,19 +78,10 @@ function check_running_processes() {
     return $running_count
 }
 
-# Function to create backup name with timestamp
-function create_backup_name() {
-    local timestamp=$(date +%Y%m%d_%H%M%S)
-    local backup_dir="app_backup_${timestamp}"
-    local backup_archive="${backup_dir}.tar.gz"
-    
-    echo "$backup_dir:$backup_archive"
-}
-
 # Function to backup selected items
 function backup_selected_items() {
     local backup_dir=$1
-    
+
     # Process selected items
     for item in "${SELECTED_BACKUPS[@]}"; do
         if [[ "$item" == CONFIG:* ]]; then
@@ -110,16 +101,6 @@ function perform_backup() {
     local backup_dir=$1
     local backup_archive=$2
 
-    # Create timestamp for backup name if not provided
-    if [[ -z "$backup_dir" ]]; then
-        local backup_info
-        backup_info=$(create_backup_name)
-        IFS=':' read -r backup_dir backup_archive <<< "$backup_info"
-    fi
-
-    # Ensure backup dir is set
-    BACKUP_DIR="$backup_dir"
-
     if [ ${#SELECTED_BACKUPS[@]} -eq 0 ]; then
         log "WARN" "No items selected for backup. Exiting."
         return 1
@@ -127,11 +108,11 @@ function perform_backup() {
 
     # Create backup directory
     log "INFO" "Creating backup directory..."
-    mkdir -p "$BACKUP_DIR"
+    mkdir -p "$backup_dir"
 
     # Check if required apps are running
     log "INFO" "Checking for running applications..."
-    
+
     # Extract processes to check
     local app_to_check=()
     for item in "${SELECTED_BACKUPS[@]}"; do
@@ -157,15 +138,15 @@ function perform_backup() {
 
     # Backup selected items
     log "INFO" "Starting backup process..."
-    backup_selected_items "$BACKUP_DIR"
+    backup_selected_items "$backup_dir"
 
     # Create tar archive with permissions preserved
     log "INFO" "Creating backup archive..."
-    tar -czpf "$backup_archive" "$BACKUP_DIR"
+    tar -czpf "$backup_archive" "$backup_dir"
 
     # Cleanup temporary directory
     log "INFO" "Cleaning up temporary files..."
-    rm -rf "$BACKUP_DIR"
+    rm -rf "$backup_dir"
 
     # Show completion message
     log "INFO" "Backup complete! Archive created: $backup_archive"
