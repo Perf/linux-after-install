@@ -16,7 +16,7 @@ function show_whiptail_menu() {
     local -a options=()
     local -a funcs=()
     local -a recommended=()
-    
+
     # Use direct array reference if the variable is a local array name
     if [[ "$options_name" == "display_names" ]]; then
         # Use the deserialized arrays directly
@@ -24,10 +24,10 @@ function show_whiptail_menu() {
         funcs=("${function_names[@]}")
         recommended=("${recommended_values[@]}")
     else
-        # Get array values using indirection
-        options=("${!options_name}")
-        funcs=("${!funcs_name}")
-        recommended=("${!recommended_name}")
+        # Get array values using indirection - access array elements by reference
+        eval "options=(\"\${$options_name[@]}\")"
+        eval "funcs=(\"\${$funcs_name[@]}\")"
+        eval "recommended=(\"\${$recommended_name[@]}\")"
     fi
 
     # Prepare options array for whiptail
@@ -49,30 +49,35 @@ function show_whiptail_menu() {
     local width=78
 
     # Show checkbox dialog
-    local selected=$(whiptail --title "$title" \
-                    --checklist "Select options (SPACE to toggle, ENTER to confirm):" \
-                    $height $width $((num_options + 5)) \
-                    "${whiptail_options[@]}" \
-                    3>&1 1>&2 2>&3)
+    local selected
+
+    # Standard whiptail output redirection pattern
+    selected=$(whiptail --title "$title" \
+              --checklist "Select options (SPACE to toggle, ENTER to confirm):" \
+              $height $width $((num_options + 5)) \
+              "${whiptail_options[@]}" \
+              3>&1 1>&2 2>&3)
+    local whiptail_status=$?
 
     # Exit if cancelled
-    if [ $? -ne 0 ]; then
+    if [ $whiptail_status -ne 0 ]; then
         echo "Cancelled"
-        return 1
+        return 0  # Return success even when cancelled
     fi
+
 
     # Handle special selections
     if [[ $selected == *"ALL"* ]]; then
         # Return all function names
         for ((i=0; i<num_options; i++)); do
-            echo "${funcs[$i]}"
+            printf "%s\n" "${funcs[$i]}"
         done
         return 0
     elif [[ $selected == *"RECOMMENDED"* ]]; then
         # Return recommended function names
         for ((i=0; i<num_options; i++)); do
             if [[ ${recommended[$i]} -eq 1 ]]; then
-                echo "${funcs[$i]}"
+                printf "%s\n" "${funcs[$i]}"
             fi
         done
         return 0
@@ -81,10 +86,14 @@ function show_whiptail_menu() {
         return 0
     fi
 
-    # Process regular selections
-    for item in $(echo $selected | tr -d '"' | tr ' ' '\n'); do
+    # Process regular selections - handle whiptail's formatting
+    # Remove quotes and process each item
+    selected="${selected//\"/}"
+
+    # Process the selection - consider it may be space-separated
+    for item in $selected; do
         if [[ $item =~ ^[0-9]+$ ]]; then
-            echo "${funcs[$item]}"
+            printf "%s\n" "${funcs[$item]}"
         fi
     done
 
@@ -103,7 +112,7 @@ function show_bash_menu() {
     local -a options=()
     local -a funcs=()
     local -a recommended=()
-    
+
     # Use direct array reference if the variable is a local array name
     if [[ "$options_name" == "display_names" ]]; then
         # Use the deserialized arrays directly
@@ -111,10 +120,10 @@ function show_bash_menu() {
         funcs=("${function_names[@]}")
         recommended=("${recommended_values[@]}")
     else
-        # Get array values using indirection
-        options=("${!options_name}")
-        funcs=("${!funcs_name}")
-        recommended=("${!recommended_name}")
+        # Get array values using indirection - access array elements by reference
+        eval "options=(\"\${$options_name[@]}\")"
+        eval "funcs=(\"\${$funcs_name[@]}\")"
+        eval "recommended=(\"\${$recommended_name[@]}\")"
     fi
 
     local num_options=${#options[@]}
@@ -213,10 +222,10 @@ function show_bash_menu() {
 function deserialize_array() {
     local serialized_string=$1
     local is_base64=$2
-    
+
     # Split the string by the separator and process each item
     IFS=';' read -ra parts <<< "$serialized_string"
-    
+
     # Print each item on a separate line to be read by readarray
     for part in "${parts[@]}"; do
         if [[ -n "$part" ]]; then
@@ -236,25 +245,34 @@ function show_menu() {
     local funcs_name=$3
     local recommended_name=$4
 
-    log "INFO" "Showing menu: $title"
-    
+
+    # Check if arrays are empty
+    local array_size=0
+    eval "array_size=\${#$options_name[@]}"
+
+    if [[ $array_size -eq 0 ]]; then
+        echo "ERROR: No options to display in menu"
+        return 1
+    fi
+
     # Check if we are using serialized environment variables
     if [[ "$options_name" == "MENU_DISPLAY_NAMES" && -n "$MENU_ITEMS_COUNT" ]]; then
         # Deserialize the arrays
         local -a display_names
         local -a function_names
         local -a recommended_values
-        
+
         # Read serialized strings into arrays
         readarray -t display_names < <(deserialize_array "$MENU_DISPLAY_NAMES" 1)
         readarray -t function_names < <(deserialize_array "$MENU_FUNCTION_NAMES" 0)
         readarray -t recommended_values < <(deserialize_array "$MENU_RECOMMENDED" 0)
-        
+
         # Override options_name, funcs_name, and recommended_name with local arrays
         options_name="display_names"
         funcs_name="function_names"
         recommended_name="recommended_values"
     fi
+
 
     # Check if whiptail is available
     if command -v whiptail >/dev/null 2>&1; then
@@ -330,20 +348,19 @@ function process_menu_selections() {
 
     # Get selections from menu
     local selected_functions
+
+    # Simplify by using command substitution directly
     selected_functions=$(show_menu "$title" "$options_name" "$funcs_name" "$recommended_name")
+    local menu_status=$?
 
     # Check if menu was cancelled
-    if [[ "$?" -ne 0 || "$selected_functions" == "Cancelled" ]]; then
-        log "INFO" "Menu selection cancelled"
-        return 1
+    if [[ "$menu_status" -ne 0 || "$selected_functions" == "Cancelled" ]]; then
+        return 0  # Return success even when cancelled to avoid script exit
     fi
 
     # If selections were made, execute callback
     if [[ -n "$selected_functions" ]]; then
-        log "INFO" "Processing selections"
         $callback "$selected_functions"
-    else
-        log "INFO" "No selections made"
     fi
 
     return 0

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Core utility functions for system operations
 
-# Set error handling by default
-set -eu
+# We're going to handle errors manually instead of using set -e
+set +e
 
 # Helper function for logging
 function log() {

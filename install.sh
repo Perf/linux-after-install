@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# Set error handling
-set -eu
+# Disable exit on error - we'll handle errors manually
+set +e
 
 # Get sudo permissions upfront
 sudo echo ""
@@ -58,31 +58,55 @@ declare -a MAIN_CATEGORIES=(
 function show_main_menu() {
     local choice
 
-    # Use pure bash for main menu for simplicity
-    while true; do
-        clear
-        echo "============================================================"
-        echo "           Linux System Setup and Installation               "
-        echo "============================================================"
-        echo ""
-        echo "Please select a category to install:"
-        echo ""
-
+    # Check if whiptail is available
+    if command -v whiptail >/dev/null 2>&1; then
+        # Prepare menu options for whiptail
+        local menu_options=()
         for i in "${!MAIN_CATEGORIES[@]}"; do
-            printf "%2d) %s\n" $((i+1)) "${MAIN_CATEGORIES[$i]}"
+            menu_options+=("$((i+1))" "${MAIN_CATEGORIES[$i]}")
         done
 
-        echo ""
-        echo "Enter your choice (1-${#MAIN_CATEGORIES[@]}): "
-        read -r choice
-
-        if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#MAIN_CATEGORIES[@]}" ]; then
-            return "$choice"
-        else
-            echo "Invalid choice. Press Enter to try again."
-            read -r
+        # Show menu with whiptail using standard redirection
+        choice=$(whiptail --title "Linux System Setup and Installation" \
+                 --menu "Please select a category to install:" \
+                 20 78 12 \
+                 "${menu_options[@]}" \
+                 3>&1 1>&2 2>&3)
+        local whiptail_status=$?
+        
+        # Handle exit or cancel
+        if [ $whiptail_status -ne 0 ]; then
+            return 9  # Return the "Exit" option index
         fi
-    done
+        
+        return "$choice"
+    else
+        # Fallback to pure bash for main menu
+        while true; do
+            clear
+            echo "============================================================"
+            echo "           Linux System Setup and Installation               "
+            echo "============================================================"
+            echo ""
+            echo "Please select a category to install:"
+            echo ""
+
+            for i in "${!MAIN_CATEGORIES[@]}"; do
+                printf "%2d) %s\n" $((i+1)) "${MAIN_CATEGORIES[$i]}"
+            done
+
+            echo ""
+            echo -n "Enter your choice (1-${#MAIN_CATEGORIES[@]}): "
+            read -r choice
+
+            if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#MAIN_CATEGORIES[@]}" ]; then
+                return "$choice"
+            else
+                echo "Invalid choice. Press Enter to try again."
+                read -r
+            fi
+        done
+    fi
 }
 
 # Generic function to process installation selections
@@ -90,9 +114,26 @@ function process_installations() {
     local selected_functions=$1
     
     if [[ -n "$selected_functions" ]]; then
-        for func in $selected_functions; do
-            $func
-        done
+        # Log the functions we're about to process
+        log "INFO" "Processing installation functions: $selected_functions"
+        
+        # Read functions line by line to handle spaces in function names
+        while read -r func; do
+            if [[ -n "$func" ]]; then
+                log "INFO" "Running function: $func"
+                if declare -F "$func" >/dev/null; then
+                    $func || log "ERROR" "Function $func returned an error"
+                else
+                    log "ERROR" "Function $func does not exist"
+                fi
+            fi
+        done <<< "$selected_functions"
+        
+        log "INFO" "Finished processing installation functions"
+        return 0
+    else
+        log "INFO" "No installation functions to process"
+        return 0
     fi
 }
 
@@ -113,7 +154,13 @@ function run_system_setup() {
     
     # Show menu and process selections
     echo "Select system configuration options"
-    process_menu_selections "System Configuration" DISPLAY_NAMES FUNCTION_NAMES RECOMMENDED process_installations
+    
+    # Set the array as globals to ensure they're accessible 
+    MENU_DISPLAY_NAMES=("${DISPLAY_NAMES[@]}")
+    MENU_FUNCTION_NAMES=("${FUNCTION_NAMES[@]}")
+    MENU_RECOMMENDED=("${RECOMMENDED[@]}")
+    
+    process_menu_selections "System Configuration" MENU_DISPLAY_NAMES MENU_FUNCTION_NAMES MENU_RECOMMENDED process_installations
     
     # Always offer cleanup at the end
     perform_cleanup
@@ -136,7 +183,13 @@ function run_web_browsers_setup() {
     
     # Show menu and process selections
     echo "Select web browsers and internet tools to install"
-    process_menu_selections "Web Browsers & Internet Tools" DISPLAY_NAMES FUNCTION_NAMES RECOMMENDED process_installations
+    
+    # Set the array as globals to ensure they're accessible 
+    MENU_DISPLAY_NAMES=("${DISPLAY_NAMES[@]}")
+    MENU_FUNCTION_NAMES=("${FUNCTION_NAMES[@]}")
+    MENU_RECOMMENDED=("${RECOMMENDED[@]}")
+    
+    process_menu_selections "Web Browsers & Internet Tools" MENU_DISPLAY_NAMES MENU_FUNCTION_NAMES MENU_RECOMMENDED process_installations
 }
 
 # Development Tools Section
@@ -156,7 +209,13 @@ function run_development_setup() {
     
     # Show menu and process selections
     echo "Select development tools to install"
-    process_menu_selections "Development Tools" DISPLAY_NAMES FUNCTION_NAMES RECOMMENDED process_installations
+    
+    # Set the array as globals to ensure they're accessible 
+    MENU_DISPLAY_NAMES=("${DISPLAY_NAMES[@]}")
+    MENU_FUNCTION_NAMES=("${FUNCTION_NAMES[@]}")
+    MENU_RECOMMENDED=("${RECOMMENDED[@]}")
+    
+    process_menu_selections "Development Tools" MENU_DISPLAY_NAMES MENU_FUNCTION_NAMES MENU_RECOMMENDED process_installations
 }
 
 # Communication & Collaboration Tools Section
@@ -176,7 +235,13 @@ function run_communication_setup() {
     
     # Show menu and process selections
     echo "Select communication and collaboration tools to install"
-    process_menu_selections "Communication & Collaboration Tools" DISPLAY_NAMES FUNCTION_NAMES RECOMMENDED process_installations
+    
+    # Set the array as globals to ensure they're accessible 
+    MENU_DISPLAY_NAMES=("${DISPLAY_NAMES[@]}")
+    MENU_FUNCTION_NAMES=("${FUNCTION_NAMES[@]}")
+    MENU_RECOMMENDED=("${RECOMMENDED[@]}")
+    
+    process_menu_selections "Communication & Collaboration Tools" MENU_DISPLAY_NAMES MENU_FUNCTION_NAMES MENU_RECOMMENDED process_installations
 }
 
 # AI Tools Section
@@ -196,7 +261,13 @@ function run_ai_tools_setup() {
     
     # Show menu and process selections
     echo "Select AI tools to install"
-    process_menu_selections "AI Tools" DISPLAY_NAMES FUNCTION_NAMES RECOMMENDED process_installations
+    
+    # Set the array as globals to ensure they're accessible 
+    MENU_DISPLAY_NAMES=("${DISPLAY_NAMES[@]}")
+    MENU_FUNCTION_NAMES=("${FUNCTION_NAMES[@]}")
+    MENU_RECOMMENDED=("${RECOMMENDED[@]}")
+    
+    process_menu_selections "AI Tools" MENU_DISPLAY_NAMES MENU_FUNCTION_NAMES MENU_RECOMMENDED process_installations
 }
 
 # Web 3.0 Tools Section
@@ -216,7 +287,13 @@ function run_web3_setup() {
     
     # Show menu and process selections
     echo "Select Web 3.0 tools to install"
-    process_menu_selections "Web 3.0 Tools" DISPLAY_NAMES FUNCTION_NAMES RECOMMENDED process_installations
+    
+    # Set the array as globals to ensure they're accessible 
+    MENU_DISPLAY_NAMES=("${DISPLAY_NAMES[@]}")
+    MENU_FUNCTION_NAMES=("${FUNCTION_NAMES[@]}")
+    MENU_RECOMMENDED=("${RECOMMENDED[@]}")
+    
+    process_menu_selections "Web 3.0 Tools" MENU_DISPLAY_NAMES MENU_FUNCTION_NAMES MENU_RECOMMENDED process_installations
 }
 
 # Terminal Customization Section
@@ -236,7 +313,13 @@ function run_terminal_setup() {
     
     # Show menu and process selections
     echo "Select terminal customizations to apply"
-    process_menu_selections "Terminal Customization" DISPLAY_NAMES FUNCTION_NAMES RECOMMENDED process_installations
+    
+    # Set the array as globals to ensure they're accessible 
+    MENU_DISPLAY_NAMES=("${DISPLAY_NAMES[@]}")
+    MENU_FUNCTION_NAMES=("${FUNCTION_NAMES[@]}")
+    MENU_RECOMMENDED=("${RECOMMENDED[@]}")
+    
+    process_menu_selections "Terminal Customization" MENU_DISPLAY_NAMES MENU_FUNCTION_NAMES MENU_RECOMMENDED process_installations
 }
 
 # Run All Categories
