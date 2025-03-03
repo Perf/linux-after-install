@@ -246,16 +246,25 @@ function show_menu() {
     local recommended_name=$4
 
 
-    # Check if arrays are empty
-    local array_size=0
-    eval "array_size=\${#$options_name[@]}"
+    # Check if we are using serialized environment variables first
+    if [[ "$options_name" == "MENU_DISPLAY_NAMES" && -n "$MENU_ITEMS_COUNT" ]]; then
+        # Using serialized variables, so we check MENU_ITEMS_COUNT instead of array size
+        if [[ $MENU_ITEMS_COUNT -eq 0 ]]; then
+            echo "ERROR: No options to display in menu"
+            return 1
+        fi
+    else
+        # Check if arrays are empty
+        local array_size=0
+        eval "array_size=\${#$options_name[@]}"
 
-    if [[ $array_size -eq 0 ]]; then
-        echo "ERROR: No options to display in menu"
-        return 1
+        if [[ $array_size -eq 0 ]]; then
+            echo "ERROR: No options to display in menu"
+            return 1
+        fi
     fi
 
-    # Check if we are using serialized environment variables
+    # Process serialized environment variables if needed
     if [[ "$options_name" == "MENU_DISPLAY_NAMES" && -n "$MENU_ITEMS_COUNT" ]]; then
         # Deserialize the arrays
         local -a display_names
