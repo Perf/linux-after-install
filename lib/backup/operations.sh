@@ -63,6 +63,48 @@ function get_selected_backups() {
     echo "${SELECTED_BACKUPS[@]}"
 }
 
+# Function to check running processes
+function check_running_processes() {
+    local -a processes=("$@")
+    local running_count=0
+
+    # Check each process
+    for process in "${processes[@]}"; do
+        if ! check_process "$process"; then
+            running_count=$((running_count + 1))
+        fi
+    done
+
+    return $running_count
+}
+
+# Function to create backup name with timestamp
+function create_backup_name() {
+    local timestamp=$(date +%Y%m%d_%H%M%S)
+    local backup_dir="app_backup_${timestamp}"
+    local backup_archive="${backup_dir}.tar.gz"
+    
+    echo "$backup_dir:$backup_archive"
+}
+
+# Function to backup selected items
+function backup_selected_items() {
+    local backup_dir=$1
+    
+    # Process selected items
+    for item in "${SELECTED_BACKUPS[@]}"; do
+        if [[ "$item" == CONFIG:* ]]; then
+            # Process CONFIG items
+            local config="${item#CONFIG:}"
+            backup_if_exists "$config" "${backup_dir}${config#$HOME}"
+        else
+            # Process APP items
+            IFS=':' read -r app_name process paths <<< "$item"
+            backup_app "$app_name" "$process" "$paths"
+        fi
+    done
+}
+
 # Function to perform the actual backup
 function perform_backup() {
     local backup_dir=$1
@@ -70,9 +112,9 @@ function perform_backup() {
 
     # Create timestamp for backup name if not provided
     if [[ -z "$backup_dir" ]]; then
-        local timestamp=$(date +%Y%m%d_%H%M%S)
-        backup_dir="app_backup_${timestamp}"
-        backup_archive="${backup_dir}.tar.gz"
+        local backup_info
+        backup_info=$(create_backup_name)
+        IFS=':' read -r backup_dir backup_archive <<< "$backup_info"
     fi
 
     # Ensure backup dir is set
@@ -89,9 +131,8 @@ function perform_backup() {
 
     # Check if required apps are running
     log "INFO" "Checking for running applications..."
-    local RUNNING_PROCESSES=0
-
-    # Extract and check processes
+    
+    # Extract processes to check
     local app_to_check=()
     for item in "${SELECTED_BACKUPS[@]}"; do
         if [[ "$item" == CONFIG:* ]]; then
@@ -107,14 +148,8 @@ function perform_backup() {
     # Remove duplicates
     app_to_check=($(printf "%s\n" "${app_to_check[@]}" | sort -u))
 
-    # Check processes
-    for process in "${app_to_check[@]}"; do
-        if ! check_process "$process"; then
-            RUNNING_PROCESSES=$((RUNNING_PROCESSES + 1))
-        fi
-    done
-
-    if [ $RUNNING_PROCESSES -gt 0 ]; then
+    # Check for running processes
+    if ! check_running_processes "${app_to_check[@]}"; then
         log "ERROR" "Please close all applications before proceeding."
         log "ERROR" "Then run this script again."
         return 1
@@ -122,19 +157,7 @@ function perform_backup() {
 
     # Backup selected items
     log "INFO" "Starting backup process..."
-
-    # Process selected items
-    for item in "${SELECTED_BACKUPS[@]}"; do
-        if [[ "$item" == CONFIG:* ]]; then
-            # Process CONFIG items
-            local config="${item#CONFIG:}"
-            backup_if_exists "$config" "${BACKUP_DIR}${config#$HOME}"
-        else
-            # Process APP items
-            IFS=':' read -r app_name process paths <<< "$item"
-            backup_app "$app_name" "$process" "$paths"
-        fi
-    done
+    backup_selected_items "$BACKUP_DIR"
 
     # Create tar archive with permissions preserved
     log "INFO" "Creating backup archive..."

@@ -4,6 +4,21 @@
 # Source required dependencies
 source "$(dirname "${BASH_SOURCE[0]}")/utils.sh"
 
+# Function to ensure whiptail is installed
+function ensure_whiptail_installed() {
+    if ! command -v whiptail &>/dev/null; then
+        log "INFO" "Installing whiptail for UI..."
+        sudo apt-get update -qq &>/dev/null
+        sudo apt-get install -y libnewt0.52 &>/dev/null
+        
+        if ! command -v whiptail &>/dev/null; then
+            log "ERROR" "Failed to install whiptail. Please install it manually with: sudo apt-get install libnewt0.52"
+            return 1
+        fi
+    fi
+    return 0
+}
+
 # Function to show a checkbox menu with whiptail
 function show_checkbox_menu() {
     local title=$1
@@ -15,25 +30,24 @@ function show_checkbox_menu() {
     local num_options=${#options[@]}
     local whiptail_options=()
 
-    # Add special options
-    whiptail_options+=("ALL" "Select All Options" "OFF")
-    whiptail_options+=("RECOMMENDED" "Select Recommended Options" "OFF")
-    whiptail_options+=("NONE" "Deselect All Options" "OFF")
-
-    # Add regular options
+    # Add regular options with recommended ones pre-selected
     for ((i=0; i<num_options; i++)); do
-        whiptail_options+=("$i" "${options[$i]}" "OFF")
+        local state="OFF"
+        if [[ ${recommended[$i]} -eq 1 ]]; then
+            state="ON"
+        fi
+        whiptail_options+=("$i" "${options[$i]}" "$state")
     done
 
     # Calculate height and width
-    local height=$((num_options + 15))
+    local height=$((num_options + 12))
     local width=78
 
     # Show checkbox dialog
     local selected
     selected=$(whiptail --title "$title" \
               --checklist "Select options (SPACE to toggle, ENTER to confirm):" \
-              $height $width $((num_options + 5)) \
+              $height $width $((num_options + 2)) \
               "${whiptail_options[@]}" \
               3>&1 1>&2 2>&3)
     local whiptail_status=$?
@@ -42,26 +56,6 @@ function show_checkbox_menu() {
     if [ $whiptail_status -ne 0 ]; then
         echo "Cancelled"
         return 0  # Return success even when cancelled
-    fi
-
-    # Handle special selections
-    if [[ $selected == *"ALL"* ]]; then
-        # Return all function names
-        for ((i=0; i<num_options; i++)); do
-            printf "%s\n" "${funcs[$i]}"
-        done
-        return 0
-    elif [[ $selected == *"RECOMMENDED"* ]]; then
-        # Return recommended function names
-        for ((i=0; i<num_options; i++)); do
-            if [[ ${recommended[$i]} -eq 1 ]]; then
-                printf "%s\n" "${funcs[$i]}"
-            fi
-        done
-        return 0
-    elif [[ $selected == *"NONE"* ]]; then
-        # Return nothing
-        return 0
     fi
 
     # Process regular selections - handle whiptail's formatting
@@ -86,16 +80,7 @@ function show_menu() {
     local recommended_var=$4
 
     # Ensure whiptail is installed
-    if ! command -v whiptail &>/dev/null; then
-        log "INFO" "Installing whiptail for UI..."
-        sudo apt-get update -qq &>/dev/null
-        sudo apt-get install -y libnewt0.52 &>/dev/null
-        
-        if ! command -v whiptail &>/dev/null; then
-            log "ERROR" "Failed to install whiptail. Please install it manually with: sudo apt-get install libnewt0.52"
-            return 1
-        fi
-    fi
+    ensure_whiptail_installed || return 1
     
     # Check if arrays are empty
     local array_size
@@ -117,16 +102,7 @@ function show_selection_menu() {
     local options_var=$2
 
     # Ensure whiptail is installed
-    if ! command -v whiptail &>/dev/null; then
-        log "INFO" "Installing whiptail for UI..."
-        sudo apt-get update -qq &>/dev/null
-        sudo apt-get install -y libnewt0.52 &>/dev/null
-        
-        if ! command -v whiptail &>/dev/null; then
-            log "ERROR" "Failed to install whiptail. Please install it manually with: sudo apt-get install libnewt0.52"
-            return 1
-        fi
-    fi
+    ensure_whiptail_installed || return 1
 
     # Get array size via indirect reference
     local array_size

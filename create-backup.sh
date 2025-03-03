@@ -32,13 +32,8 @@ function process_backup_selections() {
     set_selected_backups "${selected_items[@]}"
 }
 
-# Function to run backup process
-function run_backup() {
-    # Create timestamp for backup name
-    local timestamp=$(date +%Y%m%d_%H%M%S)
-    local backup_dir="app_backup_${timestamp}"
-    local backup_archive="${backup_dir}.tar.gz"
-
+# Function to prepare backup menu
+function prepare_backup_menu() {
     # Create arrays for the menu
     declare -a BACKUP_DISPLAY_NAMES=()
     declare -a BACKUP_FUNCTION_NAMES=()
@@ -70,9 +65,15 @@ function run_backup() {
 
     # Show menu and process selections
     process_menu_selections "Select Items to Backup" BACKUP_DISPLAY_NAMES BACKUP_FUNCTION_NAMES BACKUP_RECOMMENDED process_backup_selections
+}
+
+# Function to run backup process
+function run_backup() {
+    # Prepare and show the backup menu
+    prepare_backup_menu
 
     # Perform the backup
-    perform_backup "$backup_dir" "$backup_archive"
+    perform_backup
 
     return $?
 }
@@ -119,15 +120,20 @@ function main() {
     # Show welcome message
     show_backup_welcome_message
 
-    # Run backup process
-    run_backup
-
-    # Ask if user wants to create another backup
-    if prompt_user "yes_no" "Would you like to create another backup?"; then
-        clear
-        echo "Creating another backup..."
+    # Run backup loop
+    local continue_backup=true
+    while $continue_backup; do
+        # Run backup process
         run_backup
-    fi
+
+        # Ask if user wants to create another backup
+        if prompt_user "yes_no" "Would you like to create another backup?"; then
+            clear
+            echo "Creating another backup..."
+        else
+            continue_backup=false
+        fi
+    done
 
     echo "Exiting backup script. Goodbye!"
     exit 0
