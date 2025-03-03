@@ -50,49 +50,6 @@ function backup_app() {
     return 0
 }
 
-# Function to load backup configurations
-function load_backup_configs() {
-    local config_file=$1
-
-    if [[ -f "$config_file" ]]; then
-        # Source configuration file
-        source "$config_file"
-
-        # Check if variables were loaded correctly
-        if [[ ${#BACKUP_APPS[@]} -eq 0 ]]; then
-            log "ERROR" "No applications defined in backup configuration"
-            return 1
-        fi
-
-        if [[ ${#BACKUP_CONFIGS[@]} -eq 0 ]]; then
-            log "WARN" "No configuration files defined in backup configuration"
-        fi
-
-        # Export arrays to parent scope for use in other scripts
-        # We need to use environment variables since Bash arrays are not exported
-        if [[ "${#BACKUP_APPS[@]}" -gt 0 ]]; then
-            export BACKUP_APPS_SIZE=${#BACKUP_APPS[@]}
-            for ((i=0; i<${#BACKUP_APPS[@]}; i++)); do
-                export BACKUP_APP_$i="${BACKUP_APPS[$i]}"
-        done
-        fi
-
-        if [[ "${#BACKUP_CONFIGS[@]}" -gt 0 ]]; then
-            export BACKUP_CONFIGS_SIZE=${#BACKUP_CONFIGS[@]}
-            for ((i=0; i<${#BACKUP_CONFIGS[@]}; i++)); do
-                export BACKUP_CONFIG_$i="${BACKUP_CONFIGS[$i]}"
-            done
-        fi
-
-        return 0
-    else
-        log "ERROR" "Configuration file '$config_file' not found"
-        print_message "$RED" "Error: Backup configuration file not found"
-        print_message "$YELLOW" "Please ensure the backup configuration file exists at: $config_file"
-        return 1
-    fi
-}
-
 # Global array for storing selected backup items
 declare -a SELECTED_BACKUPS=()
 

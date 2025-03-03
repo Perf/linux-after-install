@@ -9,34 +9,7 @@ source ./lib/core/ui.sh
 source ./lib/core/menu.sh
 source ./lib/backup/operations.sh
 
-# Load backup configurations
-if ! load_backup_configs "./config/backup.conf"; then
-    exit 1
-fi
-
-# Reconstruct arrays from exported environment variables
-declare -a BACKUP_APPS=()
-declare -a BACKUP_CONFIGS=()
-
-if [[ -n "$BACKUP_APPS_SIZE" ]]; then
-    for ((i=0; i<BACKUP_APPS_SIZE; i++)); do
-        varname="BACKUP_APP_$i"
-        BACKUP_APPS+=("${!varname}")
-    done
-fi
-
-if [[ -n "$BACKUP_CONFIGS_SIZE" ]]; then
-    for ((i=0; i<BACKUP_CONFIGS_SIZE; i++)); do
-        varname="BACKUP_CONFIG_$i"
-        BACKUP_CONFIGS+=("${!varname}")
-    done
-fi
-
-# Arrays have been successfully reconstructed
-log "INFO" "Loaded backup configuration with ${#BACKUP_APPS[@]} apps and ${#BACKUP_CONFIGS[@]} configs"
-
 # Function to process backup selections
-# shellcheck disable=SC2317
 function process_backup_selections() {
     local selected_functions=$1
     local selected_items=()
@@ -95,33 +68,8 @@ function run_backup() {
     printf "   - Configuration files will be backed up as-is\n\n"
     sleep 1
 
-    # Convert arrays to serialized strings to pass to subprocesses
-    local serialized_display_names=""
-    local serialized_function_names=""
-    local serialized_recommended=""
-
-    for ((i=0; i<${#BACKUP_DISPLAY_NAMES[@]}; i++)); do
-        # Escape any special characters with base64 encoding
-        local encoded_name=$(echo "${BACKUP_DISPLAY_NAMES[$i]}" | base64)
-        serialized_display_names+="$encoded_name;"
-    done
-
-    for ((i=0; i<${#BACKUP_FUNCTION_NAMES[@]}; i++)); do
-        serialized_function_names+="${BACKUP_FUNCTION_NAMES[$i]};"
-    done
-
-    for ((i=0; i<${#BACKUP_RECOMMENDED[@]}; i++)); do
-        serialized_recommended+="${BACKUP_RECOMMENDED[$i]};"
-    done
-
-    # Export these as environment variables to be available to subprocesses
-    export MENU_DISPLAY_NAMES="$serialized_display_names"
-    export MENU_FUNCTION_NAMES="$serialized_function_names"
-    export MENU_RECOMMENDED="$serialized_recommended"
-    export MENU_ITEMS_COUNT="${#BACKUP_DISPLAY_NAMES[@]}"
-
     # Show menu and process selections
-    process_menu_selections "Select Items to Backup" "MENU_DISPLAY_NAMES" "MENU_FUNCTION_NAMES" "MENU_RECOMMENDED" process_backup_selections
+    process_menu_selections "Select Items to Backup" BACKUP_DISPLAY_NAMES BACKUP_FUNCTION_NAMES BACKUP_RECOMMENDED process_backup_selections
 
     # Perform the backup
     perform_backup "$backup_dir" "$backup_archive"
@@ -153,6 +101,21 @@ function show_backup_welcome_message() {
 
 # Main program
 function main() {
+    # Load backup configurations directly
+    source "./config/backup.conf"
+    
+    # Check if variables were loaded correctly
+    if [[ ${#BACKUP_APPS[@]} -eq 0 ]]; then
+        log "ERROR" "No applications defined in backup configuration"
+        exit 1
+    fi
+
+    if [[ ${#BACKUP_CONFIGS[@]} -eq 0 ]]; then
+        log "WARN" "No configuration files defined in backup configuration"
+    fi
+    
+    log "INFO" "Loaded backup configuration with ${#BACKUP_APPS[@]} apps and ${#BACKUP_CONFIGS[@]} configs"
+
     # Show welcome message
     show_backup_welcome_message
 

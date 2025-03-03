@@ -5,30 +5,11 @@
 source "$(dirname "${BASH_SOURCE[0]}")/utils.sh"
 
 # Function to show a checkbox menu with whiptail
-function show_whiptail_menu() {
+function show_checkbox_menu() {
     local title=$1
-
-    # Get array names
-    local options_name=$2
-    local funcs_name=$3
-    local recommended_name=$4
-
-    local -a options=()
-    local -a funcs=()
-    local -a recommended=()
-
-    # Use direct array reference if the variable is a local array name
-    if [[ "$options_name" == "display_names" ]]; then
-        # Use the deserialized arrays directly
-        options=("${display_names[@]}")
-        funcs=("${function_names[@]}")
-        recommended=("${recommended_values[@]}")
-    else
-        # Get array values using indirection - access array elements by reference
-        eval "options=(\"\${$options_name[@]}\")"
-        eval "funcs=(\"\${$funcs_name[@]}\")"
-        eval "recommended=(\"\${$recommended_name[@]}\")"
-    fi
+    local -a options=("${!2}")
+    local -a funcs=("${!3}")
+    local -a recommended=("${!4}")
 
     # Prepare options array for whiptail
     local num_options=${#options[@]}
@@ -50,8 +31,6 @@ function show_whiptail_menu() {
 
     # Show checkbox dialog
     local selected
-
-    # Standard whiptail output redirection pattern
     selected=$(whiptail --title "$title" \
               --checklist "Select options (SPACE to toggle, ENTER to confirm):" \
               $height $width $((num_options + 5)) \
@@ -64,7 +43,6 @@ function show_whiptail_menu() {
         echo "Cancelled"
         return 0  # Return success even when cancelled
     fi
-
 
     # Handle special selections
     if [[ $selected == *"ALL"* ]]; then
@@ -100,266 +78,101 @@ function show_whiptail_menu() {
     return 0
 }
 
-# Function to show a checkbox menu with pure bash
-function show_bash_menu() {
-    local title=$1
-
-    # Get array names
-    local options_name=$2
-    local funcs_name=$3
-    local recommended_name=$4
-
-    local -a options=()
-    local -a funcs=()
-    local -a recommended=()
-
-    # Use direct array reference if the variable is a local array name
-    if [[ "$options_name" == "display_names" ]]; then
-        # Use the deserialized arrays directly
-        options=("${display_names[@]}")
-        funcs=("${function_names[@]}")
-        recommended=("${recommended_values[@]}")
-    else
-        # Get array values using indirection - access array elements by reference
-        eval "options=(\"\${$options_name[@]}\")"
-        eval "funcs=(\"\${$funcs_name[@]}\")"
-        eval "recommended=(\"\${$recommended_name[@]}\")"
-    fi
-
-    local num_options=${#options[@]}
-    local selected=()
-
-    # Initialize all as unselected
-    for ((i=0; i<num_options; i++)); do
-        selected[$i]=0
-    done
-
-    while true; do
-        clear
-        echo "================================================================================"
-        echo "                            $title"
-        echo "================================================================================"
-        echo ""
-        echo "Select options (enter numbers to toggle, then press ENTER when done):"
-        echo ""
-
-        # Special options
-        echo "Special options:"
-        echo "  A) [ ] Select All"
-        echo "  R) [ ] Select Recommended"
-        echo "  N) [ ] Deselect All"
-        echo ""
-
-        # Regular options
-        echo "Options:"
-        for ((i=0; i<num_options; i++)); do
-            local checkbox="[ ]"
-            local recommend=""
-
-            if [[ ${selected[$i]} -eq 1 ]]; then
-                checkbox="[x]"
-            fi
-
-            if [[ ${recommended[$i]} -eq 1 ]]; then
-                recommend=" (recommended)"
-            fi
-
-            printf "  %2d) %s %s%s\n" $((i+1)) "$checkbox" "${options[$i]}" "$recommend"
-        done
-
-        echo ""
-        echo "Enter your selection (numbers, A, R, N, or 'done' to proceed): "
-        read -r selection
-
-        # Handle special inputs
-        if [[ "${selection,,}" == "a" ]]; then
-            # Select all
-            for ((i=0; i<num_options; i++)); do
-                selected[$i]=1
-            done
-        elif [[ "${selection,,}" == "r" ]]; then
-            # Select recommended
-            for ((i=0; i<num_options; i++)); do
-                if [[ ${recommended[$i]} -eq 1 ]]; then
-                    selected[$i]=1
-                else
-                    selected[$i]=0
-                fi
-            done
-        elif [[ "${selection,,}" == "n" ]]; then
-            # Deselect all
-            for ((i=0; i<num_options; i++)); do
-                selected[$i]=0
-            done
-        elif [[ "${selection,,}" == "done" || -z "$selection" ]]; then
-            # Confirm selection
-            break
-        else
-            # Toggle individual selections
-            IFS=',' read -ra indices <<< "$selection"
-            for index in "${indices[@]}"; do
-                if [[ "$index" =~ ^[0-9]+$ ]]; then
-                    idx=$((index-1))
-                    if [[ $idx -ge 0 && $idx -lt num_options ]]; then
-                        selected[$idx]=$((1-selected[$idx]))  # Toggle
-                    fi
-                fi
-            done
-        fi
-    done
-
-    # Return selected function names
-    for ((i=0; i<num_options; i++)); do
-        if [[ ${selected[$i]} -eq 1 ]]; then
-            echo "${funcs[$i]}"
-        fi
-    done
-
-    return 0
-}
-
-# Function to deserialize a serialized array
-function deserialize_array() {
-    local serialized_string=$1
-    local is_base64=$2
-
-    # Split the string by the separator and process each item
-    IFS=';' read -ra parts <<< "$serialized_string"
-
-    # Print each item on a separate line to be read by readarray
-    for part in "${parts[@]}"; do
-        if [[ -n "$part" ]]; then
-            if [[ "$is_base64" == "1" ]]; then
-                echo "$(echo "$part" | base64 --decode)"
-            else
-                echo "$part"
-            fi
-        fi
-    done
-}
-
-# Main menu display function with fallback
+# Main menu display function
 function show_menu() {
     local title=$1
-    local options_name=$2
-    local funcs_name=$3
-    local recommended_name=$4
+    local options_var=$2
+    local funcs_var=$3
+    local recommended_var=$4
 
-
-    # Check if we are using serialized environment variables first
-    if [[ "$options_name" == "MENU_DISPLAY_NAMES" && -n "$MENU_ITEMS_COUNT" ]]; then
-        # Using serialized variables, so we check MENU_ITEMS_COUNT instead of array size
-        if [[ $MENU_ITEMS_COUNT -eq 0 ]]; then
-            echo "ERROR: No options to display in menu"
-            return 1
-        fi
-    else
-        # Check if arrays are empty
-        local array_size=0
-        eval "array_size=\${#$options_name[@]}"
-
-        if [[ $array_size -eq 0 ]]; then
-            echo "ERROR: No options to display in menu"
+    # Ensure whiptail is installed
+    if ! command -v whiptail &>/dev/null; then
+        log "INFO" "Installing whiptail for UI..."
+        sudo apt-get update -qq &>/dev/null
+        sudo apt-get install -y libnewt0.52 &>/dev/null
+        
+        if ! command -v whiptail &>/dev/null; then
+            log "ERROR" "Failed to install whiptail. Please install it manually with: sudo apt-get install libnewt0.52"
             return 1
         fi
     fi
-
-    # Process serialized environment variables if needed
-    if [[ "$options_name" == "MENU_DISPLAY_NAMES" && -n "$MENU_ITEMS_COUNT" ]]; then
-        # Deserialize the arrays
-        local -a display_names
-        local -a function_names
-        local -a recommended_values
-
-        # Read serialized strings into arrays
-        readarray -t display_names < <(deserialize_array "$MENU_DISPLAY_NAMES" 1)
-        readarray -t function_names < <(deserialize_array "$MENU_FUNCTION_NAMES" 0)
-        readarray -t recommended_values < <(deserialize_array "$MENU_RECOMMENDED" 0)
-
-        # Override options_name, funcs_name, and recommended_name with local arrays
-        options_name="display_names"
-        funcs_name="function_names"
-        recommended_name="recommended_values"
+    
+    # Check if arrays are empty
+    local array_size
+    eval "array_size=\${#$options_var[@]}"
+    
+    if [[ $array_size -eq 0 ]]; then
+        echo "ERROR: No options to display in menu"
+        return 1
     fi
-
-
-    # Check if whiptail is available
-    if command -v whiptail >/dev/null 2>&1; then
-        # Use whiptail
-        show_whiptail_menu "$title" "$options_name" "$funcs_name" "$recommended_name"
-        return $?
-    else
-        # Offer to install whiptail
-        echo "The 'whiptail' package is not installed. It provides a better interface for selections."
-        echo "Would you like to install it now? (y/n)"
-        read -r install_whiptail
-
-        if [[ "${install_whiptail,,}" == "y"* ]]; then
-            log "INFO" "Installing whiptail for improved UI"
-            (
-                sudo apt-get update -qq >/dev/null 2>&1
-                sudo apt-get install -y libnewt0.52 >/dev/null 2>&1
-            ) & show_progress $! "Installing whiptail"
-
-            # Now try whiptail again
-            if command -v whiptail >/dev/null 2>&1; then
-                show_whiptail_menu "$title" "$options_name" "$funcs_name" "$recommended_name"
-                return $?
-            else
-                log "WARN" "Failed to install whiptail, using fallback UI"
-            fi
-        fi
-
-        # Fallback to bash UI
-        show_bash_menu "$title" "$options_name" "$funcs_name" "$recommended_name"
-        return $?
-    fi
+    
+    # Show menu with references to the original arrays
+    show_checkbox_menu "$title" "$options_var[@]" "$funcs_var[@]" "$recommended_var[@]"
+    return $?
 }
 
 # Function to show a simple selection menu
 function show_selection_menu() {
     local title=$1
-    local -n options_ref=$2
+    local options_var=$2
 
-    while true; do
-        clear
-        echo "============================================================"
-        echo "           $title"
-        echo "============================================================"
-        echo ""
-        echo "Please select an option:"
-        echo ""
-
-        for i in "${!options_ref[@]}"; do
-            printf "%2d) %s\n" $((i+1)) "${options_ref[$i]}"
-        done
-
-        echo ""
-        echo "Enter your choice (1-${#options_ref[@]}): "
-        read -r choice
-
-        if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#options_ref[@]}" ]; then
-            return "$choice"
-        else
-            echo "Invalid choice. Press Enter to try again."
-            read -r
+    # Ensure whiptail is installed
+    if ! command -v whiptail &>/dev/null; then
+        log "INFO" "Installing whiptail for UI..."
+        sudo apt-get update -qq &>/dev/null
+        sudo apt-get install -y libnewt0.52 &>/dev/null
+        
+        if ! command -v whiptail &>/dev/null; then
+            log "ERROR" "Failed to install whiptail. Please install it manually with: sudo apt-get install libnewt0.52"
+            return 1
         fi
+    fi
+
+    # Get array size via indirect reference
+    local array_size
+    eval "array_size=\${#$options_var[@]}"
+    
+    # Create the menu options array
+    local height=$((array_size + 10))
+    local width=78
+    local menu_options=()
+
+    # Add menu options
+    local i=0
+    while [ $i -lt $array_size ]; do
+        local item
+        eval "item=\${$options_var[$i]}"
+        menu_options+=("$((i+1))" "$item")
+        ((i++))
     done
+
+    # Show the menu
+    local selection
+    selection=$(whiptail --title "$title" \
+                --menu "Please select an option:" \
+                $height $width $((array_size + 5)) \
+                "${menu_options[@]}" \
+                3>&1 1>&2 2>&3)
+    local whiptail_status=$?
+
+    if [ $whiptail_status -ne 0 ]; then
+        return 1
+    fi
+
+    return "$selection"
 }
 
 # Function to process menu selections with a callback
 function process_menu_selections() {
     local title=$1
-    local options_name=$2
-    local funcs_name=$3
-    local recommended_name=$4
+    local options_var=$2
+    local funcs_var=$3
+    local recommended_var=$4
     local callback=$5
 
     # Get selections from menu
     local selected_functions
-
-    # Simplify by using command substitution directly
-    selected_functions=$(show_menu "$title" "$options_name" "$funcs_name" "$recommended_name")
+    selected_functions=$(show_menu "$title" "$options_var" "$funcs_var" "$recommended_var")
     local menu_status=$?
 
     # Check if menu was cancelled
