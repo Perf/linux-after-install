@@ -13,6 +13,9 @@ function install_claude_code() {
 
     if prompt_user "yes_no" "Would you like to install Claude Code?"; then
         (
+            # TODO
+            # https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview
+            # https://nodejs.org/en/download
             # Download and run the official installer
             curl -fsSL https://claude.ai/claude-code/install.sh | bash
         ) & show_progress $! "Installing Claude Code"

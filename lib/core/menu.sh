@@ -141,14 +141,24 @@ function show_selection_menu() {
 # Function to process menu selections with a callback
 function process_menu_selections() {
     local title=$1
-    local options_var=$2
-    local funcs_var=$3
-    local recommended_var=$4
-    local callback=$5
+    local -n category_config=$2
+
+    # Reinitialize global arrays for menu
+    declare -a MENU_DISPLAY_NAMES=()
+    declare -a MENU_FUNCTION_NAMES=()
+    declare -a MENU_RECOMMENDED=()
+
+    # Fill global arrays with data
+    for config_item in "${category_config[@]}"; do
+        IFS=':' read -r display_name function_name recommend <<< "$config_item"
+        MENU_DISPLAY_NAMES+=("$display_name")
+        MENU_FUNCTION_NAMES+=("$function_name")
+        MENU_RECOMMENDED+=("$recommend")
+    done
 
     # Get selections from menu
     local selected_functions
-    selected_functions=$(show_menu "$title" "$options_var" "$funcs_var" "$recommended_var")
+    selected_functions=$(show_menu "$title" MENU_DISPLAY_NAMES MENU_FUNCTION_NAMES MENU_RECOMMENDED)
     local menu_status=$?
 
     # Check if menu was cancelled
@@ -158,7 +168,24 @@ function process_menu_selections() {
 
     # If selections were made, execute callback
     if [[ -n "$selected_functions" ]]; then
-        $callback "$selected_functions"
+        # Log the functions we're about to process
+        log "INFO" "Processing installation functions: $selected_functions"
+
+        # Read functions line by line to handle spaces in function names
+        while read -r func; do
+            if [[ -n "$func" ]]; then
+                log "INFO" "Running function: $func"
+                if declare -F "$func" >/dev/null; then
+                    $func || log "ERROR" "Function $func returned an error"
+                else
+                    log "ERROR" "Function $func does not exist"
+                fi
+            fi
+        done <<< "$selected_functions"
+
+        log "INFO" "Finished processing installation functions"
+    else
+        log "INFO" "No installation functions to process"
     fi
 
     return 0
