@@ -13,14 +13,14 @@ function install_claude_code() {
 
     if prompt_user "yes_no" "Would you like to install Claude Code?"; then
         (
-            # TODO
-            # https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview
-            # https://nodejs.org/en/download
-            # Download and run the official installer
-            curl -fsSL https://claude.ai/claude-code/install.sh | bash
+            local version
+            version=$(curl --silent 'https://api.github.com/repos/nvm-sh/nvm/releases/latest' 2>/dev/null | jq '.tag_name' -r 2>/dev/null)
+            curl -o- "https://raw.githubusercontent.com/nvm-sh/nvm/${version}/install.sh" | bash
+            \. "$HOME/.nvm/nvm.sh"
+            nvm install --lts
+            npm install -g @anthropic-ai/claude-code
         ) & show_progress $! "Installing Claude Code"
         log "INFO" "Claude Code installed successfully"
-        log "INFO" "Run 'claude' to start using Claude Code"
     else
         log "INFO" "Claude Code installation skipped"
     fi
@@ -63,22 +63,6 @@ function install_windsurf_ide() {
 }
 
 function install_cursor_ide() {
-    log "INFO" "Starting Cursor IDE installation"
-
-    if prompt_user "yes_no" "Would you like to install Cursor IDE?\nRead https://cursor.sh/ for details."; then
-        (
-            # Download the latest .deb package
-            wget -q "https://download.cursor.sh/linux/appImage/x64/Cursor-latest.deb" -O _cursor.deb 2>/dev/null
-
-            # Install the package
-            sudo dpkg -i _cursor.deb > /dev/null 2>&1 || sudo apt -yf install > /dev/null 2>&1
-
-            # Cleanup
-            rm _cursor.deb > /dev/null 2>&1
-
-        ) & show_progress $! "Installing Cursor IDE"
-        log "INFO" "Cursor IDE installed successfully"
-    else
-        log "INFO" "Cursor IDE installation skipped"
-    fi
+    local url="https://download.cursor.sh/linux/appImage/x64/Cursor-latest.deb"
+    install_deb_package "$url" "Cursor IDE"
 }
