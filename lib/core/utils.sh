@@ -42,7 +42,7 @@ function prompt_user() {
     case "$prompt_type" in
         "yes_no")
             printf "[Y/n]: "
-            read -r answer
+            read -r answer < /dev/tty
             [[ -z "$answer" || "${answer,,}" == "y"* ]] && return 0 || return 1
             ;;
         "choice")
@@ -51,7 +51,7 @@ function prompt_user() {
                 printf "%d) %b\n" $((i+1)) "${choices[$i]}"
             done
             printf "Choose [1-%d]: " "${#choices[@]}"
-            read -r REPLY
+            read -r REPLY < /dev/tty
             printf "%b" "$REPLY"
             ;;
         "input")
@@ -60,7 +60,7 @@ function prompt_user() {
             else
                 printf ": "
             fi
-            read -r input
+            read -r input < /dev/tty
             REPLY="${input:-$default}"
             printf "%s" "$REPLY"
             ;;
